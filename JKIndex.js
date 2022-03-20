@@ -1,13 +1,21 @@
 function definer(target, name, desc) {
-    var ret = {configurable: true, enumerable: false, get: undefined, set: undefined, value: undefined, writable: true};
-    
-    if (typeof desc != "object" || ["get", "set", "value"].every(u => !(u in desc))) desc = {value: desc};
-    
-    Object.assign(ret, desc);
-    
-    [["get", "set"], ["value", "writable"]][+["get", "set"].some(u => u in desc)].forEach(u => {delete ret[u];});
-    
     try {
+        var ret = {configurable: true, enumerable: false, get: undefined, set: undefined, value: undefined, writable: true};
+        
+        if (typeof desc != "object" || ["get", "set", "value"].every(u => !(u in desc))) desc = {value: desc};
+        
+        for (let i of Object.keys(desc)) if (!(i in ret)) delete desc[i];
+        
+        Object.assign(ret, desc);
+        
+        if ("get" in desc || "set" in desc) {
+            delete ret.value;
+            delete ret.writable;
+        } else {
+            delete ret.get;
+            delete ret.set;
+        }
+        
         Object.defineProperty(target, name, ret);
     } catch (err) {
         let e = Error(`Failed to define ${target}.${name}:`, {cause: err});
@@ -18,4 +26,4 @@ function definer(target, name, desc) {
     }
 }
 
-["apply", "bind", "call"].forEach(u => {definer[u] = function(...args) {return Function.prototype[u].call(definer, null, ...args);};});
+definer(definer, "bind", function(...args) {return Function.prototype.bind.call(definer, null, ...args);});
