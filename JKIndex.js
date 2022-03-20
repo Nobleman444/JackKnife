@@ -1,6 +1,8 @@
 function definer(target, name, desc) {
     try {
-        var ret = {configurable: true, enumerable: false, get: undefined, set: undefined, value: undefined, writable: true};
+        let ret = {configurable: true, enumerable: false, get: undefined, set: undefined, value: undefined, writable: true};
+        
+        if (name in target) throw Error(`${target}.${name} already exists.`);
         
         if (typeof desc != "object" || ["get", "set", "value"].every(u => !(u in desc))) desc = {value: desc};
         
@@ -26,5 +28,32 @@ function definer(target, name, desc) {
     }
 }
 
-var defineOn = target => definer.bind(null, target);
-var define = defineOn(globalThis);
+var define = definer;
+var defineOn = target => {define = definer.bind(null, target);};
+
+defineOn(globalThis);
+
+define("Logic", {
+    t(...x) {return x.reduce((acc, u) => acc + !!u, 0);}, f(...x) {return x.reduce((acc, u) => acc + !u, 0);},
+    
+    all(...x) {return this.t(...x) == x.length;}, notall(...x) {return !this.all(...x);},
+    
+    any(...x) {return this.t(...x) >= 1;}, notany(...x) {return !this.any(...x);},
+    
+    atl(n, ...x) {
+        if (n >= 0) return this.t(...x) >= n;
+        return this.f(...x) >= -n;
+    }, less(n, ...x) {return !this.atl(n, ...x);},
+    
+    atm(n, ...x) {
+        if (n >= 0) return this.t(...x) <= n;
+        return this.f(...x) <= -n;
+    }, more(n, ...x) {return !this.atm(n, ...x);},
+    
+    num(n, ...x) {
+        if (n >= 0) return this.t(...x) == n;
+        return this.f(...x) == -n;
+    }, notnum(n, ...x) {return !this.num(n, ...x);},
+    
+    one(...x) {return this.num(1, ...x);}, notone(...x) {return !this.one(...x);}
+});
