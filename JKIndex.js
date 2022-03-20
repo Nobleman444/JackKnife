@@ -26,4 +26,5 @@ function definer(target, name, desc) {
     }
 }
 
-definer(definer, "bind", function(...args) {return Function.prototype.bind.call(definer, null, ...args);});
+var defineOn = target => definer.bind(null, target);
+var define = defineOn(globalThis);
