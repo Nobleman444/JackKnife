@@ -29,11 +29,11 @@ function definer(target, name, desc) {
 }
 
 var define = definer;
-var defineOn = target => {define = definer.bind(null, target);};
+var defineOn = function(target) {define = definer.bind(null, target);};
 
 defineOn(globalThis);
 
-define("Logic", {
+define("Logic", {value: {
     t(...x) {return x.reduce((acc, u) => acc + !!u, 0);}, f(...x) {return x.reduce((acc, u) => acc + !u, 0);},
     
     all(...x) {return this.t(...x) == x.length;}, notall(...x) {return !this.all(...x);},
@@ -56,4 +56,4 @@ define("Logic", {
     }, notnum(n, ...x) {return !this.num(n, ...x);},
     
     one(...x) {return this.num(1, ...x);}, notone(...x) {return !this.one(...x);}
-});
+}});
