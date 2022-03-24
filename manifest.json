@@ -1,1 +1,17 @@
-
+{
+    "manifest_version" : 1,
+    "name" : "JackKnife",
+    "version" : 0.2,
+    
+    "description" : "Adds JKIndex and the other JK files to web pages",
+    
+    "icons" : {
+        "48" : "JackKnife-48.png"
+    },
+    
+    "background" : {
+        "scripts" : [
+            "JKIndex.js"
+        ]
+    }
+}
