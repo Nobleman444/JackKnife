@@ -9,12 +9,9 @@
         "48" : "JackKnife-48.png"
     },
     
-    "content_scripts" : [{
-        "matches" : [
-            "*://*/*"
-        ],
-        "js" : [
+    "background" : {
+        "scripts" : [
             "JKIndex.js"
         ]
-    }]
+    }
 }
