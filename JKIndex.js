@@ -1,4 +1,4 @@
-function definer(target, name, desc) {
+var define = new Proxy(function (target, name, desc) {
     try {
         let ret = {configurable: true, enumerable: false, get: undefined, set: undefined, value: undefined, writable: true};
         
@@ -26,12 +26,13 @@ function definer(target, name, desc) {
     } finally {
         return target;
     }
-}
+}, {
+    has(tar, nam) {return nam == "on" || nam in tar;},
+    get(tar, nam) {return nam == "on" ? tar.on ?? globalThis : tar[nam];},
+    apply(tar, thi, arg) {return tar.call(null, tar.on ?? globalThis, ...arg);}
+});
 
-var define = definer;
-var defineOn = function(target) {define = definer.bind(null, target);};
-
-defineOn(globalThis);
+define.on = globalThis;
 
 define("Logic", {value: {
     t(...x) {return x.reduce((acc, u) => acc + !!u, 0);},
@@ -63,4 +64,4 @@ define("Logic", {value: {
     
     one(...x) {return this.num(1, ...x);},
     notone(...x) {return !this.one(...x);}
-}});console.log(Logic);
+}});console.log(globalThis);
