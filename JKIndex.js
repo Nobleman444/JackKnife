@@ -34,26 +34,33 @@ var defineOn = function(target) {define = definer.bind(null, target);};
 defineOn(globalThis);
 
 define("Logic", {value: {
-    t(...x) {return x.reduce((acc, u) => acc + !!u, 0);}, f(...x) {return x.reduce((acc, u) => acc + !u, 0);},
+    t(...x) {return x.reduce((acc, u) => acc + !!u, 0);},
+    f(...x) {return x.reduce((acc, u) => acc + !u, 0);},
     
-    all(...x) {return this.t(...x) == x.length;}, notall(...x) {return !this.all(...x);},
+    all(...x) {return this.t(...x) == x.length;},
+    notall(...x) {return !this.all(...x);},
     
-    any(...x) {return this.t(...x) >= 1;}, notany(...x) {return !this.any(...x);},
+    any(...x) {return this.t(...x) >= 1;},
+    notany(...x) {return !this.any(...x);},
     
     atl(n, ...x) {
         if (n >= 0) return this.t(...x) >= n;
         return this.f(...x) >= -n;
-    }, less(n, ...x) {return !this.atl(n, ...x);},
+    },
+    less(n, ...x) {return !this.atl(n, ...x);},
     
     atm(n, ...x) {
         if (n >= 0) return this.t(...x) <= n;
         return this.f(...x) <= -n;
-    }, more(n, ...x) {return !this.atm(n, ...x);},
+    },
+    more(n, ...x) {return !this.atm(n, ...x);},
     
     num(n, ...x) {
         if (n >= 0) return this.t(...x) == n;
         return this.f(...x) == -n;
-    }, notnum(n, ...x) {return !this.num(n, ...x);},
+    },
+    notnum(n, ...x) {return !this.num(n, ...x);},
     
-    one(...x) {return this.num(1, ...x);}, notone(...x) {return !this.one(...x);}
-}});
+    one(...x) {return this.num(1, ...x);},
+    notone(...x) {return !this.one(...x);}
+}});console.log(Logic);
