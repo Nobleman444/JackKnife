@@ -1,12 +1,10 @@
-class JKError extends Error {
-    constructor(...x) {
-        super (...x);
-        this.name = "JKError";
-        return this;
-    }
-}
+const JKError = function(...x) {
+    var ret = Error(...x);
+    ret.name = "JKError";
+    return ret;
+};
 
-var define = new Proxy(function (target, name, desc) {
+const define = new Proxy(function (target, name, desc) {
     try {
         let ret = {configurable: true, enumerable: false, get: undefined, set: undefined, value: undefined, writable: true};
         
@@ -79,7 +77,7 @@ define.on = Array;
 
 define("sequence", function(stop = 0, start = 0, step = 1) {
     [stop, start, step].forEach((u, i) => {
-        if (typeof u != "number" || !isFinite(u)) throw JKError(`Array.sequence: Argument ${["stop", "start", "step"][i]} must be a finite number.`);
+        if (typeof u != "number" || !isFinite(u)) throw JKError(`Array.sequence: Argument ${i} must be a finite number.`);
     });
     
     var ret = [];
