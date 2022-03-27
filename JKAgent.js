@@ -1,10 +1,8 @@
 (() => {
     var c = document.createElement("script");
     
-    Object.assign(c, {
-        type: "text/javascript",
-        src: browser.runtime.getURL("JKIndex.js");
-    });
+    c.type = "text/javascript";
+    c.src = browser.runtime.getURL("JKIndex.js");
     
-    console.log(c);
+    document.body.appendChild(c);
 })();
