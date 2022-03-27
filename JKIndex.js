@@ -30,14 +30,14 @@
     }, {
         has(tar, nam) {return nam == "on" || nam in tar;},
         get(tar, nam) {return nam == "on" ? tar.on ?? globalThis : tar[nam];},
-        set(tar, nam, val) {tar[nam] = nam == "on" ? val ?? globalThis : val;},
+        set(tar, nam, val) {return tar[nam] = nam == "on" ? val ?? globalThis : val;},
         
         apply(tar, thi, arg) {return tar.call(null, tar.on ?? globalThis, ...arg);},
         construct(tar, arg) {return tar.bind(null, ...arg);}
     });
-
+    
     define.on = globalThis;
-
+    
     define("Logic", {value: {
         t(...x) {return x.reduce((acc, u) => acc + !!u, 0);},
         f(...x) {return x.reduce((acc, u) => acc + !u, 0);},
