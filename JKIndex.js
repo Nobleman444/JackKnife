@@ -1,8 +1,16 @@
+class JKError extends Error {
+    constructor(...x) {
+        super (...x);
+        this.name = "JKError";
+        return this;
+    }
+}
+
 var define = new Proxy(function (target, name, desc) {
     try {
         let ret = {configurable: true, enumerable: false, get: undefined, set: undefined, value: undefined, writable: true};
         
-        if (name in target) throw Error(`${target}.${name} already exists.`);
+        if (name in target) throw JKError(`${target}.${name} already exists.`);
         
         if (typeof desc != "object" || ["get", "set", "value"].every(u => !(u in desc))) desc = {value: desc};
         
@@ -20,9 +28,7 @@ var define = new Proxy(function (target, name, desc) {
         
         Object.defineProperty(target, name, ret);
     } catch (err) {
-        let e = Error(`Failed to define ${target}.${name}:`, {cause: err});
-        e.name = "JKError";
-        console.error(e);
+        console.error(JKError(`Failed to define ${target}.${name}:`, {cause: err}));
     } finally {
         return target;
     }
@@ -67,4 +73,24 @@ define("Logic", {value: {
     
     one(...x) {return this.num(1, ...x);},
     notone(...x) {return !this.one(...x);}
-}});
+}}); Object.keys(Logic).forEach(u => {Object.defineProperty(Logic, u, {enumerable: false});});
+
+define.on = Array;
+
+define("sequence", function(stop = 0, start = 0, step = 1) {
+    [stop, start, step].forEach((u, i) => {
+        if (typeof u != "number" || !isFinite(u)) throw JKError(`Array.sequence: Argument ${["stop", "start", "step"][i]} must be a finite number.`);
+    });
+    
+    var ret = [];
+    
+    switch (Math.sign((stop - start) * step)) {
+        case -1: step *= -1;
+        case 1: for (let i = start; (stop - start) * (stop - i) > 0; i += step) ret.push(i);
+        default: return ret;
+    }
+});
+
+define.on = Number.prototype;
+
+define();
