@@ -10,9 +10,15 @@ const define = new Proxy(function (target, name, desc) {
         
         if (name in target) throw JKError(`${target}.${name} already exists.`);
         
-        if (typeof desc != "object" || ["get", "set", "value"].every(u => !(u in desc))) desc = {value: desc};
+        if ([
+            typeof desc != "object",
+            ["get", "set", "value"].every(u => !(u in desc)),
+            Reflect.ownKeys(desc).some(u => !(u in ret))
+        ].some(u => u)) desc = {value: desc};
         
-        for (let i of Object.keys(desc)) if (!(i in ret)) delete desc[i];
+        if ("value" in desc && typeof desc.value == "object") {
+            Object.keys(desc.value).forEach(u => {Object.defineProperty(desc.value, u, {enumerable: false});});
+        }
         
         Object.assign(ret, desc);
         
@@ -71,7 +77,7 @@ define("Logic", {value: {
     
     one(...x) {return this.num(1, ...x);},
     notone(...x) {return !this.one(...x);}
-}}); Object.keys(Logic).forEach(u => {Object.defineProperty(Logic, u, {enumerable: false});});
+}});
 
 define.on = Array;
 
@@ -91,4 +97,28 @@ define("sequence", function(stop = 0, start = 0, step = 1) {
 
 define.on = Number.prototype;
 
-define();
+define("toChar", function() {
+    var val = Math.round(this.valueOf());
+    
+    if (val >= 0 && val < 0xd800 || val > 0xdfff && val <= 0xffff) return String.fromCharCode(val);
+    if (val > 0xffff && val <= 0x10ffff) return String.fromCodePoint(val);
+    return "";
+});
+
+define.on = String.prototype;
+
+define("toCharCode", function() {
+    var ret = [];
+    
+    for (let i = 0; i < this.length; i++) ret.push(this.charCodeAt(i));
+    
+    return ret;
+});
+
+define("toCodePoint", function() {
+    var ret = [];
+    
+    for (let i = 0; i < this.length; i++) ret.push(this.codePointAt(i));
+    
+    return ret;
+});
