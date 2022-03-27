@@ -107,18 +107,6 @@ define("toChar", function() {
 
 define.on = String.prototype;
 
-define("toCharCode", function() {
-    var ret = [];
-    
-    for (let i = 0; i < this.length; i++) ret.push(this.charCodeAt(i));
-    
-    return ret;
-});
+define("toCharCode", function() {return [...this.toString()].map(u => u.charCodeAt());});
 
-define("toCodePoint", function() {
-    var ret = [];
-    
-    for (let i = 0; i < this.length; i++) ret.push(this.codePointAt(i));
-    
-    return ret;
-});
+define("toCodePoint", function() {return [...this.toString()].map(u => u.codePointAt());});
