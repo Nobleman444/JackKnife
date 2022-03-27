@@ -28,11 +28,14 @@ var define = new Proxy(function (target, name, desc) {
     }
 }, {
     has(tar, nam) {return nam == "on" || nam in tar;},
-    get(tar, nam) {return nam == "on" ? tar.on ?? window : tar[nam];},
-    apply(tar, thi, arg) {return tar.call(null, tar.on ?? window, ...arg);}
+    get(tar, nam) {return nam == "on" ? tar.on ?? globalThis : tar[nam];},
+    set(tar, nam, val) {tar[nam] = nam == "on" ? val ?? globalThis : val;},
+    
+    apply(tar, thi, arg) {return tar.call(null, tar.on ?? globalThis, ...arg);},
+    construct(tar, arg) {return tar.bind(null, ...arg);}
 });
 
-define.on = window;
+define.on = globalThis;
 
 define("Logic", {value: {
     t(...x) {return x.reduce((acc, u) => acc + !!u, 0);},
@@ -64,4 +67,4 @@ define("Logic", {value: {
     
     one(...x) {return this.num(1, ...x);},
     notone(...x) {return !this.one(...x);}
-}});console.log(window);
+}});
