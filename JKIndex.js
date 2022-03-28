@@ -82,15 +82,25 @@ define("Logic", {value: {
 define.on = Array;
 
 define("sequence", function(stop = 0, start = 0, step = 1) {
-    [stop, start, step].forEach((u, i) => {
-        if (typeof u != "number" || !isFinite(u)) throw JKError(`Array.sequence: Argument ${i} must be a finite number.`);
-    });
+    var ret = [], string = false;
     
-    var ret = [];
+    if (typeof stop == "string" && stop.length) {
+        string = true;
+        stop = stop.codePointAt();
+    }
+    
+    if (typeof start == "string" && start.length) {
+        string = true;
+        start = start.codePointAt();
+    }
+    
+    [stop, start, step].forEach((u, i) => {
+        if (typeof u != "number" || !isFinite(u)) throw JKError(`Array.sequence: Argument ${i} must be a finite number or non-empty string.`);
+    });
     
     switch (Math.sign((stop - start) * step)) {
         case -1: step *= -1;
-        case 1: for (let i = start; (stop - start) * (stop - i) > 0; i += step) ret.push(i);
+        case 1: for (let i = start; (stop - start) * (stop - i) > 0; i += step) ret.push(string ? String.fromCodePoint(i) : i);
         default: return ret;
     }
 });
