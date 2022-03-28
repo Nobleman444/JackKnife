@@ -47,6 +47,26 @@ const define = new Proxy(function (target, name, desc) {
 
 define.on = globalThis;
 
+define("Interval", class {
+    #glb = 0; #lub = 1; #inc = [true, false]; #step = 0; #string = false;
+    
+    constructor(...specs) {
+        var low, high, inLow, inHigh, diff;
+        
+        if (specs.length == 1) {
+            
+        }
+    }
+    
+    includes(n) {
+        var ret = false;
+    }
+    
+    [Symbol.iterator]() {
+        
+    }
+});
+
 define("Logic", {value: {
     t(...x) {return x.reduce((acc, u) => acc + !!u, 0);},
     f(...x) {return x.reduce((acc, u) => acc + !u, 0);},
