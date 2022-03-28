@@ -54,16 +54,31 @@ define("Interval", class {
         var low, high, inLow, inHigh, diff;
         
         if (specs.length == 1) {
+            specs = specs[0];
             
-        }
+            if (typeof specs == "object") {
+                ({low, high, incL: inLow, incH: inHigh, step: diff} = specs);
+                
+                if ("inc" in specs) {
+                    if (Array.isArray(specs.inc)) [inLow, inHigh] = specs.inc;
+                    else if (typeof specs.inc == "object") ({low: inLow, high: inHigh} = specs.inc);
+                    else switch (specs) {
+                        case "closed": inLow = inHigh = true; break;
+                        case "open": inLow = inHigh = false;
+                    }
+                }
+            } else if (typeof specs == "string") {
+                
+            }
+        } else [low, high, inLow, inHigh, diff] = specs;
     }
     
     includes(n) {
         var ret = false;
     }
     
-    [Symbol.iterator]() {
-        
+    *[Symbol.iterator]() {
+        if (!this.#step) return;
     }
 });
 
