@@ -48,30 +48,81 @@ const define = new Proxy(function (target, name, desc) {
 define.on = globalThis;
 
 define("Interval", class {
-    #glb = 0; #lub = 1; #inc = [true, false]; #step = 0; #string = false;
-    
-    constructor(...specs) {
-        var low, high, inLow, inHigh, diff;
+    static {
+        get integers() {return new Interval({low: -Infinity, high: Infinity, diff: 1});}
+        get naturals() {return new Interval({low: 1, incL: true, high: Infinity, diff: 1});}
+        get reals() {return new Interval({low: -Infinity, high: Infinity, diff: 0});}
+        get positive() {return new Interval({low: 0, incL: false, high: Infinity, diff: 0});}
+        get negative() {return new Interval({low: -Infinity, high: 0, incH: false, diff: 0});}
         
-        if (specs.length == 1) {
-            specs = specs[0];
-            
-            if (typeof specs == "object") {
-                ({low, high, incL: inLow, incH: inHigh, step: diff} = specs);
-                
-                if ("inc" in specs) {
-                    if (Array.isArray(specs.inc)) [inLow, inHigh] = specs.inc;
-                    else if (typeof specs.inc == "object") ({low: inLow, high: inHigh} = specs.inc);
-                    else switch (specs) {
-                        case "closed": inLow = inHigh = true; break;
-                        case "open": inLow = inHigh = false;
-                    }
-                }
-            } else if (typeof specs == "string") {
-                
+        get lowerCase() {return new Interval({low: "a", incL: true, high: "z", incH: true, diff: 1});}
+        get upperCase() {return new Interval({low: "A", incL: true, high: "Z", incH: true, diff: 1});}
+        
+        digits(n = 10) {return new Interval({low: "0", incL: true, high: (n - 1).toString(n), incH: true, diff: 1});}
+        unicode(useChars = true) {
+            if (useChars) {
+                new Interval({low: 0, incL: true, high: 0x10ffff, incH: true, diff: 1}, true).exclude;
             }
-        } else [low, high, inLow, inHigh, diff] = specs;
+            return new Interval({
+                low: 0, incL: true, high: 0x10ffff, incH: true, diff: 1
+            }, useChars).exclude({low: 0xd800, incL: true, high: 0xdfff, incH: true, diff: 1});
+        }
     }
+    
+    #glb = 0; #lub = 1; #inc = 1; #step = 0; #string = false;
+    
+    constructor({low = 0, incL = true, high = 1, incH = false, diff = 0}, useChars = false) {
+        var err = (a, b) => JKError(`Interval constructor: ${a} must be ${b}.`);
+        var err1 = (a, b) => err(`Property ${a} of argument 0`, b);
+        var err2 = a => err1(a, "a number or non-empty string");
+        
+        if (typeof arguments[0] != "object") throw err("Argument 0", "an object");
+        
+        if (typeof low == "string") {
+            useChars = true;
+            low = low.codePointAt();
+        }
+        if (typeof low != "number" || low != low) throw err2("low");
+        
+        if (typeof high == "string") {
+            useChars = true;
+            high = high.codePointAt();
+        }
+        if (typeof high != "number" || high != high) throw err2("high");
+        
+        if (low > high) throw err1("low", 'less than or equal to "high"');
+        if (low == Infinity) throw err1("low", "less than Infinity");
+        if (high == -Infinity) throw err1("high", "greater than -Infinity");
+        
+        if (isFinite(diff)) {
+            diff = Math.abs(+diff);
+            
+        } else throw err1("diff", "a finite number");
+        
+        this.#string = useChars;
+        
+        
+    }
+    
+    get hasMin() {return isFinite(this.#glb) && !!(this.#inc & 1);}
+    set hasMin(b) {
+        if (b) this.#inc |= 1;
+        else this.#inc &= ~1;
+    }
+    
+    get hasMax() {return isFinite(this.#lub) && !!(this.#inc & 2);}
+    set hasMax(b) {
+        if (b) this.#inc |= 2;
+        else this.#inc &= ~2;
+    }
+    
+    get isClosed() {return this.hasMin && this.hasMax;}
+    get isOpen() {return !this.hasMin && !this.hasMax;}
+    
+    get boundary() {return [this.#glb, this.#lub].map(u => isFinite(u) ? u : undefined);}
+    
+    close() {this.hasMin = this.hasMax = true; return this.isClosed;}
+    open() {this.hasMin = this.hasMax = false; return this.isOpen;}
     
     includes(n) {
         var ret = false;
@@ -155,3 +206,7 @@ define.on = String.prototype;
 define("toCharCode", function() {return [...this.toString()].map(u => u.charCodeAt());});
 
 define("toCodePoint", function() {return [...this.toString()].map(u => u.codePointAt());});
+
+define("toFloat", function() {return parseFloat(this.toString());});
+
+define("toInt", function(n) {return parseInt(this.toString(), n);});
