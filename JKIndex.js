@@ -60,18 +60,31 @@ define("Interval", class {
         
         digits(n = 10) {return new Interval({low: "0", incL: true, high: (n - 1).toString(n), incH: true, diff: 1});}
         unicode(useChars = true) {
-            if (useChars) {
-                new Interval({low: 0, incL: true, high: 0x10ffff, incH: true, diff: 1}, true).exclude;
-            }
             return new Interval({
                 low: 0, incL: true, high: 0x10ffff, incH: true, diff: 1
             }, useChars).exclude({low: 0xd800, incL: true, high: 0xdfff, incH: true, diff: 1});
         }
+        unicodeBMP(useChars = true) {
+            return new Interval({
+                low: 0, incL: true, high: 0xffff, incH: true, diff: 1
+            }, useChars).exclude({low: 0xd800, incL: true, high: 0xdfff, incH: true, diff: 1});
+        }
     }
     
-    #glb = 0; #lub = 1; #inc = 1; #step = 0; #string = false;
+    #bound = [-Infinity, Infinity]; #inc = 1; #step = 0; #string = false;
     
-    constructor({low = 0, incL = true, high = 1, incH = false, diff = 0}, useChars = false) {
+    #in(t) {return this.#string ? t.codePointAt() : +t;}
+    #out(n) {return this.#string ? String.fromCodePoint(n) : n;}
+    
+    constructor(spec, useChars = false) {
+        var {low = 0, incL = true, high = 1, incH = false, diff = 0} = spec;
+        
+        if (spec instanceof Interval) {
+            
+        } else if (typeof spec == "string") {
+            
+        }
+        
         var err = (a, b) => JKError(`Interval constructor: ${a} must be ${b}.`);
         var err1 = (a, b) => err(`Property ${a} of argument 0`, b);
         var err2 = a => err1(a, "a number or non-empty string");
@@ -79,13 +92,13 @@ define("Interval", class {
         if (typeof arguments[0] != "object") throw err("Argument 0", "an object");
         
         if (typeof low == "string") {
-            useChars = true;
+            this.#string = true;
             low = low.codePointAt();
         }
         if (typeof low != "number" || low != low) throw err2("low");
         
         if (typeof high == "string") {
-            useChars = true;
+            this.#string = true;
             high = high.codePointAt();
         }
         if (typeof high != "number" || high != high) throw err2("high");
@@ -99,18 +112,38 @@ define("Interval", class {
             
         } else throw err1("diff", "a finite number");
         
-        this.#string = useChars;
+        this.#string ||= useChars;
         
         
     }
     
-    get hasMin() {return isFinite(this.#glb) && !!(this.#inc & 1);}
+    get isChars() {return this.#string;}
+    
+    get min() {return this.#out(this.#bound[0] + (this.hasMin ? 0 : this.#step));}
+    set min(n) {
+        n = this.#in(n);
+        if (n != n) return;
+        n -= this.hasMin ? 0 : this.#step;
+        this.#bound.shift();
+        this.#bound.splice(+(n > this.#bound[0]), 0, n);
+    }
+    
+    get hasMin() {return isFinite(this.#bound[0]) && !!(this.#inc & 1);}
     set hasMin(b) {
         if (b) this.#inc |= 1;
         else this.#inc &= ~1;
     }
     
-    get hasMax() {return isFinite(this.#lub) && !!(this.#inc & 2);}
+    get max() {return this.#out(this.#bound[1] - (this.hasMax ? 0 : this.#step));}
+    set max(n) {
+        n = this.#in(n);
+        if (n != n) return;
+        n += this.hasMax ? 0 : this.#step;
+        this.#bound.pop();
+        this.#bound.splice(+(n < this.#bound[0]), 0, n);
+    }
+    
+    get hasMax() {return isFinite(this.#bound[1]) && !!(this.#inc & 2);}
     set hasMax(b) {
         if (b) this.#inc |= 2;
         else this.#inc &= ~2;
@@ -119,7 +152,11 @@ define("Interval", class {
     get isClosed() {return this.hasMin && this.hasMax;}
     get isOpen() {return !this.hasMin && !this.hasMax;}
     
-    get boundary() {return [this.#glb, this.#lub].map(u => isFinite(u) ? u : undefined);}
+    get interior() {}
+    get closure() {}
+    get upperBound() {}
+    get lowerBound() {}
+    get boundary() {return this.#bound;}
     
     close() {this.hasMin = this.hasMax = true; return this.isClosed;}
     open() {this.hasMin = this.hasMax = false; return this.isOpen;}
@@ -129,8 +166,12 @@ define("Interval", class {
     }
     
     *[Symbol.iterator]() {
-        if (!this.#step) return;
+        if (!this.#step || this.max == this.min && !this.isClosed) return;
     }
+});
+
+define("IntervalSet", class {
+    
 });
 
 define("Logic", {value: {
