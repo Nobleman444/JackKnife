@@ -2,7 +2,7 @@ const JKError = function(...x) {
     var ret = Error(...x);
     ret.name = "JKError";
     return ret;
-};
+}; JKError[Symbol.hasInstance] = function(x) {return x instanceof Error && x.name == "JKError";};
 
 const define = new Proxy(function (target, name, desc) {
     try {
@@ -42,64 +42,91 @@ const define = new Proxy(function (target, name, desc) {
     set(tar, nam, val) {return tar[nam] = nam == "on" ? val ?? globalThis : val;},
     
     apply(tar, thi, arg) {return tar.call(null, tar.on ?? globalThis, ...arg);},
-    construct(tar, arg) {return tar.bind(null, ...arg);}
+    construct(tar, arg) {return tar.apply(null, arg);}
 });
 
 define.on = globalThis;
 
 define("Interval", class {
-    static {
-        get integers() {return new Interval({low: -Infinity, high: Infinity, diff: 1});}
-        get naturals() {return new Interval({low: 1, incL: true, high: Infinity, diff: 1});}
-        get reals() {return new Interval({low: -Infinity, high: Infinity, diff: 0});}
-        get positive() {return new Interval({low: 0, incL: false, high: Infinity, diff: 0});}
-        get negative() {return new Interval({low: -Infinity, high: 0, incH: false, diff: 0});}
+    static get Z() {return new Interval({low: -Infinity, high: Infinity, diff: 1});}
+    static get Zn() {return new Interval({low: -Infinity, high: 0, incH: false, diff: 1});}
+    static get N() {return new Interval({low: 1, incL: true, high: Infinity, diff: 1});}
+    static get N0() {return new Interval({low: 0, incL: true, high: Infinity, diff: 1});}
+    static get R() {return new Interval({low: -Infinity, high: Infinity, diff: 0});}
+    static get Rp() {return new Interval({low: 0, incL: false, high: Infinity, diff: 0});}
+    static get Rn() {return new Interval({low: -Infinity, high: 0, incH: false, diff: 0});}
+    
+    static get uc() {return new Interval({low: "A", incL: true, high: "Z", incH: true, diff: 1});}
+    static get lc() {return new Interval({low: "a", incL: true, high: "z", incH: true, diff: 1});}
+    static get letter() {return Interval.lc.union(Interval.uc);}
+    static get alphanumLC() {return Interval.lc.union(Interval.digits());}
+    
+    static digits(n = 10) {
+        var ret = new Interval({low: "0", incL: true, high: Math.min(n - 1, 9).toString(10), incH: true, diff: 1});
         
-        get lowerCase() {return new Interval({low: "a", incL: true, high: "z", incH: true, diff: 1});}
-        get upperCase() {return new Interval({low: "A", incL: true, high: "Z", incH: true, diff: 1});}
+        n -= 10;
         
-        digits(n = 10) {return new Interval({low: "0", incL: true, high: (n - 1).toString(n), incH: true, diff: 1});}
-        unicode(useChars = true) {
-            return new Interval({
-                low: 0, incL: true, high: 0x10ffff, incH: true, diff: 1
-            }, useChars).exclude({low: 0xd800, incL: true, high: 0xdfff, incH: true, diff: 1});
-        }
-        unicodeBMP(useChars = true) {
-            return new Interval({
-                low: 0, incL: true, high: 0xffff, incH: true, diff: 1
-            }, useChars).exclude({low: 0xd800, incL: true, high: 0xdfff, incH: true, diff: 1});
-        }
+        if (n > 0) ret = ret.union({});
+    }
+    static unicode(useChars = true) {
+        return new Interval({
+            low: 0, incL: true, high: 0x10ffff, incH: true, diff: 1
+        }, useChars).exclude({low: 0xd800, incL: true, high: 0xdfff, incH: true, diff: 1});
+    }
+    static unicodeBMP(useChars = true) {
+        return new Interval({
+            low: 0, incL: true, high: 0xffff, incH: true, diff: 1
+        }, useChars).exclude({low: 0xd800, incL: true, high: 0xdfff, incH: true, diff: 1});
     }
     
     #bound = [-Infinity, Infinity]; #inc = 1; #step = 0; #string = false;
     
-    #in(t) {return this.#string ? t.codePointAt() : +t;}
-    #out(n) {return this.#string ? String.fromCodePoint(n) : n;}
+    #o(n) {return this.#string ? String.fromCodePoint(n) : n;}
+    #i(x) {switch (this.#string && typeof x) {
+        case false: x = +x; return x == x ? x : undefined;
+        case "string": return x.codePointAt();
+        case "number":
+            if (x != x) return;
+            x = Math.round(x);
+            if (x < 0) return 0;
+            if (x >= 0xd800 && x < 0xdc00) return 0xd800 - 1;
+            if (x >= 0xdc00 && x <= 0xdfff) return 0xe000;
+            if (x > 0x10ffff) return 0x10ffff;
+            return x;
+    }}
     
     constructor(spec, useChars = false) {
-        var {low = 0, incL = true, high = 1, incH = false, diff = 0} = spec;
-        
         if (spec instanceof Interval) {
-            
-        } else if (typeof spec == "string") {
-            
+            this.#bound = spec.boundary;
+            this.#inc = spec.hasMin + 2 * spec.hasMax;
+            this.#step = spec.gap;
+            this.#string = spec.isChars;
+            return this;
         }
         
+        var {low = 0, incL = true, high = 1, incH = false, diff = 0} = spec;
+    }
+    
+    get spec() {
+        var [low, high] = this.#bound;
+        var [incL, incH] = this.#inc.toString(2).padStart(2, 0).split("")
+    }
+    set spec({low, incL, high, incH, diff}) {
         var err = (a, b) => JKError(`Interval constructor: ${a} must be ${b}.`);
-        var err1 = (a, b) => err(`Property ${a} of argument 0`, b);
+        var err1 = (a, b) => err(`Property "${a}" of argument 0`, b);
         var err2 = a => err1(a, "a number or non-empty string");
         
         if (typeof arguments[0] != "object") throw err("Argument 0", "an object");
         
         if (typeof low == "string") {
             this.#string = true;
-            low = low.codePointAt();
+            low = this.#i(low);
         }
         if (typeof low != "number" || low != low) throw err2("low");
         
         if (typeof high == "string") {
             this.#string = true;
-            high = high.codePointAt();
+            high = this.#i(high);
         }
         if (typeof high != "number" || high != high) throw err2("high");
         
@@ -107,26 +134,20 @@ define("Interval", class {
         if (low == Infinity) throw err1("low", "less than Infinity");
         if (high == -Infinity) throw err1("high", "greater than -Infinity");
         
+        this.#string ||= !!useChars;
+        
         if (isFinite(diff)) {
-            diff = Math.abs(+diff);
-            
+            if (this.#string) diff = Math.max(Math.round(diff), 1);
+            else diff = Math.abs(+diff);
         } else throw err1("diff", "a finite number");
         
-        this.#string ||= useChars;
-        
-        
+        this.#bound = [low, high];
+        this.#inc = incL + 2 * incH;
+        this.#step = diff;
     }
     
     get isChars() {return this.#string;}
-    
-    get min() {return this.#out(this.#bound[0] + (this.hasMin ? 0 : this.#step));}
-    set min(n) {
-        n = this.#in(n);
-        if (n != n) return;
-        n -= this.hasMin ? 0 : this.#step;
-        this.#bound.shift();
-        this.#bound.splice(+(n > this.#bound[0]), 0, n);
-    }
+    set isChars(b) {this.#string = !!b;}
     
     get hasMin() {return isFinite(this.#bound[0]) && !!(this.#inc & 1);}
     set hasMin(b) {
@@ -134,14 +155,17 @@ define("Interval", class {
         else this.#inc &= ~1;
     }
     
-    get max() {return this.#out(this.#bound[1] - (this.hasMax ? 0 : this.#step));}
-    set max(n) {
-        n = this.#in(n);
-        if (n != n) return;
-        n += this.hasMax ? 0 : this.#step;
-        this.#bound.pop();
-        this.#bound.splice(+(n < this.#bound[0]), 0, n);
+    get glb() {return this.#o(this.#bound[0]);}
+    set glb(x) {
+        x = this.#i(x);
+        if (x != x) return;
+        if (this.#string ) 
+        this.#bound.shift();
+        this.#bound.splice(+(x > this.#bound[0]), 0, x);
     }
+    
+    get min() {return this.#o(this.#bound[0] + (this.hasMin || !this.#step || this.#bound[0] == -Infinity ? 0 : this.#step));}
+    set min(x) {}
     
     get hasMax() {return isFinite(this.#bound[1]) && !!(this.#inc & 2);}
     set hasMax(b) {
@@ -149,29 +173,38 @@ define("Interval", class {
         else this.#inc &= ~2;
     }
     
-    get isClosed() {return this.hasMin && this.hasMax;}
-    get isOpen() {return !this.hasMin && !this.hasMax;}
+    get max() {return this.#o(this.#bound[1] - (this.hasMax ? 0 : this.#step));}
+    set max(x) {
+        x = this.#i(x);
+        if (x != x) return;
+        x += this.hasMax ? 0 : this.#step;
+        this.#bound.pop();
+        this.#bound.splice(+(x < this.#bound[0]), 0, x);
+    }
+    
+    get isClosed() {return this.#inc == 3;}
+    get isOpen() {return this.#inc == 0;}
+    get isEmpty() {return this.#bound[0] == this.#bound[1] && !this.isClosed || this.max - this.min < this.#step;}
     
     get interior() {}
     get closure() {}
-    get upperBound() {}
-    get lowerBound() {}
-    get boundary() {return this.#bound;}
+    get upper() {}
+    get lower() {}
+    get boundary() {return [...this.#bound];}
     
-    close() {this.hasMin = this.hasMax = true; return this.isClosed;}
-    open() {this.hasMin = this.hasMax = false; return this.isOpen;}
+    get gap() {return this.#step;}
+    get isContinuous() {return this.#step == 0;}
     
-    includes(n) {
+    close() {this.#inc = 3; return this.isClosed;}
+    open() {this.#inc = 0; return this.isOpen;}
+    
+    includes(x) {
         var ret = false;
     }
     
     *[Symbol.iterator]() {
-        if (!this.#step || this.max == this.min && !this.isClosed) return;
+        if (!this.#step || this.isEmpty) return;
     }
-});
-
-define("IntervalSet", class {
-    
 });
 
 define("Logic", {value: {
@@ -242,7 +275,52 @@ define("toChar", function() {
     return "";
 });
 
+define.on = String;
+
+define("lev", function(a, b) {
+    [a, b] = [a, b].map(u => u.toString());
+    
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    if (a.charAt() == b.charAt()) return String.lev(a.slice(1), b.slice(1));
+    return Math.min(...[[a.slice(1), b], [a, b.slice(1)], [a.slice(1), b.slice(1)]].map(u => String.lev(...u))) + 1;
+});
+
 define.on = String.prototype;
+
+define("cluster", function(n = 1) {
+    var ret = [];
+    
+    n = Math.abs(Math.round(+n));
+    
+    if (n != n || n == 0) ret.push("");
+    else for (let i = 0; i < this.length; i += n) ret.push(this.slice(i, i + n));
+    
+    return ret;
+});
+
+define("cut", function(rx) {
+    var ret = [], breaks = [0], ex = rx.exec(this.toString());
+    new define(breaks, "last", {get() {return this.slice(-1)[0];}});
+    
+    if (ex?.index > breaks.last) breaks.push(ex.index);
+    if (ex?.lastIndex > breaks.last) breaks.push(ex.lastIndex);
+    if (breaks.last < this.length) breaks.push(this.length);
+    
+    while (breaks.length > 1) ret.push(this.slice(breaks.shift(), breaks[0]));
+    
+    return ret;
+});
+
+define("head", function(n = -1) {return this.slice(0, n);});
+
+define("splice", function(...x) {
+    var ret = this.split("");
+    ret.splice(...x);
+    return ret.join("");
+});
+
+define("tail", function(n = 1) {return this.slice(n);});
 
 define("toCharCode", function() {return [...this.toString()].map(u => u.charCodeAt());});
 
