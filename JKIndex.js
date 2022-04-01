@@ -1,8 +1,17 @@
-const JKError = function(...x) {
+/* const JKError = function(...x) {
     var ret = Error(...x);
     ret.name = "JKError";
     return ret;
-}; JKError[Symbol.hasInstance] = function(x) {return x instanceof Error && x.name == "JKError";};
+}; JKError[Symbol.hasInstance] = function(x) {return x instanceof Error && x.name == "JKError";}; */
+class JKError {
+    static [Symbol.hasInstance](x) {return x instanceof Error && x.name == "JKError";}
+    
+    constructor(...x) {
+        switch (x.length) {
+            
+        }
+    }
+}
 
 const define = new Proxy(function (target, name, desc) {
     try {
@@ -48,13 +57,32 @@ const define = new Proxy(function (target, name, desc) {
 define.on = globalThis;
 
 define("Interval", class {
-    static get Z() {return new Interval({low: -Infinity, high: Infinity, diff: 1});}
-    static get Zn() {return new Interval({low: -Infinity, high: 0, incH: false, diff: 1});}
-    static get N() {return new Interval({low: 1, incL: true, high: Infinity, diff: 1});}
-    static get N0() {return new Interval({low: 0, incL: true, high: Infinity, diff: 1});}
-    static get R() {return new Interval({low: -Infinity, high: Infinity, diff: 0});}
-    static get Rp() {return new Interval({low: 0, incL: false, high: Infinity, diff: 0});}
-    static get Rn() {return new Interval({low: -Infinity, high: 0, incH: false, diff: 0});}
+    static get Z() {return Interval.Zxy(-Infinity, Infinity);}
+    static get Zp() {return Interval.Zx(1);}
+    static get Z0() {return Interval.Zx(0);}
+    static get Zn() {return Interval.Zy(-1);}
+    static get Zn0() {return Interval.Zy(0);}
+    static Zx(x) {return Interval.Zxy(x, Infinity);}
+    static Zy(y) {return Interval.Zxy(-Infinity, y);}
+    static Zxy(x, y) {return new Interval({low: x, incL: true, high: y, incH: true, diff: 1});}
+    
+    static get N() {return Interval.Zp;}
+    static get N0() {return Interval.Z0;}
+    static Nx(x) {return Interval.Zx(x);}
+    
+    static get R() {return Interval.RXY(-Infinity, Infinity);}
+    static get Rp() {return Interval.RX(0);}
+    static get R0() {return Interval.Rx(0);}
+    static get Rn() {return Interval.RY(0);}
+    static get Rn0() {return Interval.Ry(0);}
+    static Rx(x) {return Interval.RxY(x, Infinity);}
+    static RX(x) {return Interval.RXY(x, Infinity);}
+    static Ry(y) {return Interval.RXy(-Infinity, y);}
+    static RY(y) {return Interval.RXY(-Infinity, y);}
+    static Rxy(x, y) {return new Interval({low: x, incL: true, high: y, incH: true, diff: 0});}
+    static RxY(x, y) {return new Interval({low: x, incL: true, high: y, incH: false, diff: 0});}
+    static RXy(x, y) {return new Interval({low: x, incL: false, high: y, incH: true, diff: 0});}
+    static RXY(x, y) {return new Interval({low: x, incL: false, high: y, incH: false, diff: 0});}
     
     static get uc() {return new Interval({low: "A", incL: true, high: "Z", incH: true, diff: 1});}
     static get lc() {return new Interval({low: "a", incL: true, high: "z", incH: true, diff: 1});}
@@ -81,35 +109,38 @@ define("Interval", class {
     
     #bound = [-Infinity, Infinity]; #inc = 1; #step = 0; #string = false;
     
-    #o(n) {return this.#string ? String.fromCodePoint(n) : n;}
-    #i(x) {switch (this.#string && typeof x) {
+    #o(n) {return this.isChars ? String.fromCodePoint(n) : n;}
+    #i(x) {switch (this.isChars && typeof x) {
         case false: x = +x; return x == x ? x : undefined;
         case "string": return x.codePointAt();
         case "number":
             if (x != x) return;
             x = Math.round(x);
             if (x < 0) return 0;
-            if (x >= 0xd800 && x < 0xdc00) return 0xd800 - 1;
-            if (x >= 0xdc00 && x <= 0xdfff) return 0xe000;
+            if (x >= 0xd800 && x <= 0xdfff) return x < 0xdc00 ? 0xd800 - 1 : 0xe000;
             if (x > 0x10ffff) return 0x10ffff;
             return x;
     }}
     
-    constructor(spec, useChars = false) {
+    constructor(spec, useChars) {
         if (spec instanceof Interval) {
-            this.#bound = spec.boundary;
-            this.#inc = spec.hasMin + 2 * spec.hasMax;
-            this.#step = spec.gap;
-            this.#string = spec.isChars;
-            return this;
+            this.spec = spec.spec;
+            this.isChars = spec.isChars;
+        } else if (typeof spec == "string") {
+            
+        } else {
+            this.spec = spec;
         }
         
-        var {low = 0, incL = true, high = 1, incH = false, diff = 0} = spec;
+        if (useChars != undefined) this.isChars = useChars;
     }
     
     get spec() {
         var [low, high] = this.#bound;
-        var [incL, incH] = this.#inc.toString(2).padStart(2, 0).split("")
+        var [incL, incH] = this.#inc.toString(2).padStart(2, 0).split("");
+        var diff = this.#step;
+        
+        return {low, incL, high, incH, diff};
     }
     set spec({low, incL, high, incH, diff}) {
         var err = (a, b) => JKError(`Interval constructor: ${a} must be ${b}.`);
@@ -118,7 +149,10 @@ define("Interval", class {
         
         if (typeof arguments[0] != "object") throw err("Argument 0", "an object");
         
-        if (typeof low == "string") {
+        if (low != undefined) {
+            if (typeof low == "string") this.#string = true;
+        }
+        if (low != undefined && typeof low == "string") {
             this.#string = true;
             low = this.#i(low);
         }
@@ -164,8 +198,12 @@ define("Interval", class {
         this.#bound.splice(+(x > this.#bound[0]), 0, x);
     }
     
-    get min() {return this.#o(this.#bound[0] + (this.hasMin || !this.#step || this.#bound[0] == -Infinity ? 0 : this.#step));}
-    set min(x) {}
+    get min() {return this.#o(this.#bound[0]);}
+    set min(x) {
+        if (x != x) return;
+        
+        x = Math.min(x, this.max);
+    }
     
     get hasMax() {return isFinite(this.#bound[1]) && !!(this.#inc & 2);}
     set hasMax(b) {
