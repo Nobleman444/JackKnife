@@ -1,15 +1,31 @@
-/* const JKError = function(...x) {
-    var ret = Error(...x);
-    ret.name = "JKError";
-    return ret;
-}; JKError[Symbol.hasInstance] = function(x) {return x instanceof Error && x.name == "JKError";}; */
 class JKError {
     static [Symbol.hasInstance](x) {return x instanceof Error && x.name == "JKError";}
     
     constructor(...x) {
-        switch (x.length) {
-            
+        var ret = [...x];
+        
+        switch (ret.length) {
+            case 0: ret = ["<no message>"]; break;
+            case 1:
+                if (ret[0] instanceof Error) ret = ["<no message>", {cause: ret[0]}];
+                else if ("cause" in ret[0]) ret = ["<no message>", {cause: ret[0].cause}];
+                else ret = [ret[0].toString()];
+                break;
+                
+            case 2:
+                ret[0] = ret[0].toString();
+                if (ret[1] instanceof Error) ret[1] = {cause: ret[1]};
+                else if ("cause" in ret[1]) ret[1] = {cause: ret[1].cause};
+                else ret[1] = {cause: JKError(ret[1].toString())};
+                break;
+                
+            default: ret = [ret[0].toString(), {cause: JKError(...ret.slice(1))}];
         }
+        
+        ret = Error(...ret);
+        ret.name = "JKError";
+        
+        return ret;
     }
 }
 
