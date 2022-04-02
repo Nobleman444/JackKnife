@@ -143,7 +143,11 @@ define("Interval", class {
             this.spec = spec.spec;
             this.isChars = spec.isChars;
         } else if (typeof spec == "string") {
+            let rx = ["^([nruz])", String.raw`([\[\]\(\)])`, String.raw`(-?infinity|[\+-]?(?:\d*\.)?\d+)`, ","];
+            rx.push(String.raw`(+?infinity|[\+-]?(?:\d*\.)?\d+)`, rx[1]);
+            rx = RegExp(rx.join(""), "i");
             
+            spec = spec.replaceAll(/\s/g, "").toLowerCase();
         } else {
             this.spec = spec;
         }
