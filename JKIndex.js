@@ -57,7 +57,7 @@ const define = new Proxy(function (target, name, desc) {
         
         Object.defineProperty(target, name, ret);
     } catch (err) {
-        console.error(JKError(`Failed to define ${target}.${name}:`, {cause: err}));
+        console.error(JKError(`Failed to define ${target}.${name}:`, err));
     } finally {
         return target;
     }
@@ -123,22 +123,42 @@ define("Interval", class {
         }, useChars).exclude({low: 0xd800, incL: true, high: 0xdfff, incH: true, diff: 1});
     }
     
-    #bound = [-Infinity, Infinity]; #inc = 1; #step = 0; #string = false;
+    #bound = [-Infinity, Infinity]; #inc = 3; #step = 0; #string = false; #core = 0;
     
     #o(n) {return this.isChars ? String.fromCodePoint(n) : n;}
-    #i(x) {switch (this.isChars && typeof x) {
-        case false: x = +x; return x == x ? x : undefined;
-        case "string": return x.codePointAt();
-        case "number":
-            if (x != x) return;
-            x = Math.round(x);
-            if (x < 0) return 0;
-            if (x >= 0xd800 && x <= 0xdfff) return x < 0xdc00 ? 0xd800 - 1 : 0xe000;
-            if (x > 0x10ffff) return 0x10ffff;
-            return x;
-    }}
+    #i(x) {
+        switch (this.isChars && typeof x) {
+            case false: x = +x; return x == x ? x : undefined;
+            case "string": return x.codePointAt();
+            case "number":
+                if (x != x) return;
+                x = Math.round(x);
+                if (x < 0) return 0;
+                if (x >= 0xd800 && x < 0xe000) return x < 0xdc00 ? 0xd800 - 1 : 0xe000;
+                if (x > 0x10ffff) return 0x10ffff;
+                return x;
+        }
+    }
     
     constructor(spec, useChars) {
+        if (Array.isArray(spec)) {
+            this.isChars = useChars ?? spec.some(u => typeof u == "string");
+            
+            spec = spec.map(this.#i);
+            spec = spec.filter(u => u != undefined);
+            spec.sort((a, b) => a > b);
+            
+            switch (spec.length) {
+                case 2: this.#bound[1] = spec[1];
+                case 1: this.#bound[0] = spec[0];
+                case 0: this.#step = 1; break;
+                
+                default:
+                    this.#step = spec[1] - spec[0];
+                    this.#bound = [...spec];
+            }
+        }
+        
         if (spec instanceof Interval) {
             this.spec = spec.spec;
             this.isChars = spec.isChars;
