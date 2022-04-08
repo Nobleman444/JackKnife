@@ -72,7 +72,7 @@ const define = new Proxy(function (target, name, desc) {
 
 define.on = globalThis;
 
-define("Interval", class {
+/* define("Interval", class {
     static get Z() {return Interval.Zxy(-Infinity, Infinity);}
     static get Zp() {return Interval.Zx(1);}
     static get Z0() {return Interval.Zx(0);}
@@ -283,7 +283,7 @@ define("Interval", class {
     *[Symbol.iterator]() {
         if (!this.#step || this.isEmpty) return;
     }
-});
+}); */
 
 define("Logic", {value: {
     t(...x) {return x.reduce((acc, u) => acc + !!u, 0);},
@@ -343,6 +343,20 @@ define("sequence", function(stop = 0, start = 0, step = 1) {
     }
 });
 
+define.on = Array.prototype;
+
+define("last", {get() {return this[this.length - 1];}, set(x) {this[this.length - 1] = x;}});
+
+define("partition", function(length = 1) {
+    var ret = [], n = Math.max(Math.round(+length), 1);
+    
+    if (n == n && n > 0) for (let i = 0; i < this.length; i += n) ret.push(this.slice(i, i + n));
+    
+    return ret;
+});
+
+define("sub", function(start, length) {return this.slice(start, start + length);});
+
 define.on = Number.prototype;
 
 define("toChar", function() {
@@ -366,12 +380,10 @@ define("lev", function(a, b) {
 
 define.on = String.prototype;
 
-define("cluster", function(n = 1) {
-    var ret = [];
+define("cluster", function(length = 1) {
+    var ret = [], n = Math.max(Math.round(+length), 1);
     
-    n = Math.abs(Math.round(+n));
-    
-    if (n != n || n == 0) ret.push("");
+    if (n != n || n <= 0) ret.push("");
     else for (let i = 0; i < this.length; i += n) ret.push(this.slice(i, i + n));
     
     return ret;
@@ -390,19 +402,11 @@ define("cut", function(rx) {
     return ret;
 });
 
-define("head", function(n = -1) {return this.slice(0, n);});
+define("splice", function(...x) {return [].splice.apply(this.split(""), x).join("");});
 
-define("splice", function(...x) {
-    var ret = this.split("");
-    ret.splice(...x);
-    return ret.join("");
-});
+define("toCharCode", function() {return this.split("").map(u => u.charCodeAt());});
 
-define("tail", function(n = 1) {return this.slice(n);});
-
-define("toCharCode", function() {return [...this.toString()].map(u => u.charCodeAt());});
-
-define("toCodePoint", function() {return [...this.toString()].map(u => u.codePointAt());});
+define("toCodePoint", function() {return this.split("").map(u => u.codePointAt());});
 
 define("toFloat", function() {return parseFloat(this.toString());});
 
