@@ -345,9 +345,7 @@ define("sequence", function(stop = 0, start = 0, step = 1) {
 
 define.on = Array.prototype;
 
-define("last", {get() {return this[this.length - 1];}, set(x) {this[this.length - 1] = x;}});
-
-define("partition", function(length = 1) {
+define("cluster", function(length = 1) {
     var ret = [], n = Math.max(Math.round(+length), 1);
     
     if (n == n && n > 0) for (let i = 0; i < this.length; i += n) ret.push(this.slice(i, i + n));
@@ -355,7 +353,17 @@ define("partition", function(length = 1) {
     return ret;
 });
 
-define("sub", function(start, length) {return this.slice(start, start + length);});
+define("last", {get() {return this[this.length - 1];}, set(x) {this[this.length - 1] = x;}});
+
+define("partition", function(length = 1) {
+    var n = Math.max(Math.round(+length), 1);
+    
+    for (let i = 0; i < this.length; i++) this.splice(i, n, this.slice(i, i + n));
+    
+    return this;
+});
+
+define("subarr", function(start, length) {return this.slice(start, start + length);});
 
 define.on = Number.prototype;
 
@@ -402,7 +410,7 @@ define("cut", function(rx) {
     return ret;
 });
 
-define("splice", function(...x) {return [].splice.apply(this.split(""), x).join("");});
+define("test", function(rx) {return rx.test(this.toString());});
 
 define("toCharCode", function() {return this.split("").map(u => u.charCodeAt());});
 
