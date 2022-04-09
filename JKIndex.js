@@ -70,6 +70,7 @@ const define = new Proxy(function (target, name, desc) {
     construct(tar, arg) {return tar.apply(null, arg);}
 });
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
 define.on = globalThis;
 
 /* define("Interval", class {
@@ -317,6 +318,9 @@ define("Logic", {value: {
     notone(...x) {return !this.one(...x);}
 }});
 
+define("isInteger", function(x) {return Number.isInteger(+x);});
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Array
 define.on = Array;
 
 define("sequence", function(stop = 0, start = 0, step = 1) {
@@ -343,12 +347,24 @@ define("sequence", function(stop = 0, start = 0, step = 1) {
     }
 });
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Array.prototype
 define.on = Array.prototype;
 
 define("cluster", function(length = 1) {
     var ret = [], n = Math.max(Math.round(+length), 1);
     
     if (n == n && n > 0) for (let i = 0; i < this.length; i += n) ret.push(this.slice(i, i + n));
+    
+    return ret;
+});
+
+define("flatten", function() {
+    var ret = this.slice(0);
+    
+    for (let i = 0; i < ret.length; ) {
+        if (Array.isArray(ret[i])) ret.splice(i, 1, ...ret[i]);
+        else i++;
+    }
     
     return ret;
 });
@@ -365,6 +381,22 @@ define("partition", function(length = 1) {
 
 define("subarr", function(start, length) {return this.slice(start, start + length);});
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Math
+define.on = Math;
+
+define("mround", function(n, multiple = 10, direction = 0) {
+    var ret = +n / multiple;
+    
+    switch (Math.sign(direction)) {
+        case 1: ret = Math.ceil(ret); break;
+        case -1: ret = Math.floor(ret); break;
+        default: ret = Math.round(ret);
+    }
+    
+    return ret * multiple;
+});
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Number.prototype
 define.on = Number.prototype;
 
 define("toChar", function() {
@@ -375,6 +407,7 @@ define("toChar", function() {
     return "";
 });
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~String
 define.on = String;
 
 define("lev", function(a, b) {
@@ -386,6 +419,7 @@ define("lev", function(a, b) {
     return Math.min(...[[a.slice(1), b], [a, b.slice(1)], [a.slice(1), b.slice(1)]].map(u => String.lev(...u))) + 1;
 });
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~String.prototype
 define.on = String.prototype;
 
 define("cluster", function(length = 1) {
@@ -398,12 +432,13 @@ define("cluster", function(length = 1) {
 });
 
 define("cut", function(rx) {
-    var ret = [], breaks = [0], ex = rx.exec(this.toString());
-    new define(breaks, "last", {get() {return this.slice(-1)[0];}});
+    var ret = [], breaks = [0], last = () => breaks[breaks.length - 1];
     
-    if (ex?.index > breaks.last) breaks.push(ex.index);
-    if (ex?.lastIndex > breaks.last) breaks.push(ex.lastIndex);
-    if (breaks.last < this.length) breaks.push(this.length);
+    if (typeof rx == "string") rx = RegExp(rx);
+    if (rx instanceof RegExp) {
+        let x = rx.exec(this.toString());
+        if (rx.global || rx.sticky)
+    }
     
     while (breaks.length > 1) ret.push(this.slice(breaks.shift(), breaks[0]));
     
