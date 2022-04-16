@@ -371,21 +371,13 @@ define("flatten", function() {
 
 define("last", {get() {return this[this.length - 1];}, set(x) {this[this.length - 1] = x;}});
 
-define("partition", function(length = 1) {
-    var n = Math.max(Math.round(+length), 1);
-    
-    for (let i = 0; i < this.length; i++) this.splice(i, n, this.slice(i, i + n));
-    
-    return this;
-});
-
 define("subarr", function(start, length) {return this.slice(start, start + length);});
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Math
 define.on = Math;
 
 define("mround", function(n, multiple = 10, direction = 0) {
-    var ret = +n / multiple;
+    var ret = n / multiple;
     
     switch (Math.sign(direction)) {
         case 1: ret = Math.ceil(ret); break;
@@ -425,19 +417,22 @@ define.on = String.prototype;
 define("cluster", function(length = 1) {
     var ret = [], n = Math.max(Math.round(+length), 1);
     
-    if (n != n || n <= 0) ret.push("");
+    if (n != n || n <= 0 || this.length == 0) ret.push("");
     else for (let i = 0; i < this.length; i += n) ret.push(this.slice(i, i + n));
     
     return ret;
 });
 
 define("cut", function(rx) {
-    var ret = [], breaks = [0], last = () => breaks[breaks.length - 1];
+    var ret = [this.toString()], breaks = [0], last = () => breaks[breaks.length - 1];
     
     if (typeof rx == "string") rx = RegExp(rx);
+    
     if (rx instanceof RegExp) {
-        let x = rx.exec(this.toString());
-        if (rx.global || rx.sticky)
+        const f = ["ignoreCase", "multiline", "dotAll", "unicode"].reduce((acc, u, i) => acc + (rx[u] ? "imsu".charAt(i) : ""), "");
+        const x = () => RegExp(rx, f).exec(ret[ret.length - 1]);
+        
+        for (let X = x(); X; X = x());
     }
     
     while (breaks.length > 1) ret.push(this.slice(breaks.shift(), breaks[0]));
