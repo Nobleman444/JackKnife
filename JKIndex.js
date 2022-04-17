@@ -423,18 +423,16 @@ define("cluster", function(length = 1) {
     return ret;
 });
 
-define("cut", function(rx) {
+define("cut", function(x) {
     var ret = [this.toString()];
     
-    if (typeof rx == "string" && rx) rx = RegExp(rx);
-    
-    if (rx instanceof RegExp) {
-        const f = ["ignoreCase", "multiline", "dotAll", "unicode"].reduce((acc, u, i) => acc + (rx[u] ? "imsu".charAt(i) : ""), "");
-        const x = () => RegExp(rx, f).exec(ret[ret.length - 1]);
+    if (x instanceof RegExp || typeof x == "string") {
+        const f = ["ignoreCase", "multiline", "dotAll", "unicode"].reduce((acc, u, i) => acc + (x[u] ? "imsu".charAt(i) : ""), "");
+        const rx = RegExp(x, f);
         
         for (let X = x(); X; X = x()) {
             let t = ret.pop();
-            ret.push(t.slice(0, X.index), X[0], t.slice(X.index + X[0].length));
+            ret.push(...[..."`&'"].map(u => t.replace()));
         }
     }
     
