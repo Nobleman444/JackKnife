@@ -1,8 +1,5 @@
-(() => {
-    var c = document.createElement("script");
+class Entry {
     
-    c.type = "module";
-    c.src = browser.runtime.getURL("JKIndex.js");
-    
-    document.body.appendChild(c);
-})();
+}
+
+const registry = {};

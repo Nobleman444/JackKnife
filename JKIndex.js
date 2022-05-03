@@ -1,35 +1,42 @@
-class JKError {
-    static [Symbol.hasInstance](x) {return x instanceof Error && x.name == "JKError";}
-    
-    constructor(...x) {
-        var ret = [...x];
-        
-        switch (ret.length) {
-            case 0: ret = ["<no message>"]; break;
-            case 1:
-                if (ret[0] instanceof Error) ret = ["<no message>", {cause: ret[0]}];
-                else if ("cause" in ret[0]) ret = ["<no message>", {cause: ret[0].cause}];
-                else ret = [ret[0].toString()];
-                break;
-                
-            case 2:
-                ret[0] = ret[0].toString();
-                if (ret[1] instanceof Error) ret[1] = {cause: ret[1]};
-                else if ("cause" in ret[1]) ret[1] = {cause: ret[1].cause};
-                else ret[1] = {cause: JKError(ret[1].toString())};
-                break;
-                
-            default: ret = [ret[0].toString(), {cause: JKError(...ret.slice(1))}];
-        }
-        
-        ret = Error(...ret);
-        ret.name = "JKError";
-        
-        return ret;
+const JKError = function(...x) {
+    switch (x.length) {
+        case 0: x = ["<no message>"]; break;
+        case 1:
+            if (x[0] instanceof Error) x = ["<no message>", {cause: x[0]}];
+            else if (x[0] instanceof Object && "cause" in x[0]) x = ["<no message>", {cause: x[0].cause}];
+            else x = [String(x[0])];
+            break;
+            
+        case 2:
+            x[0] = String(x[0]);
+            if (x[1] instanceof Error) x[1] = {cause: x[1]};
+            else if (x[1] instanceof Object && "cause" in x[1]) x[1] = {cause: x[1].cause};
+            else x[1] = {cause: JKError(String(x[1]))};
+            break;
+            
+        default: x = [String(x[0]), {cause: JKError(...x.slice(1))}];
     }
-}
+    
+    return Object.assign(Error(...x), {name: "JKError"});
+};
 
-const define = new Proxy(function (target, name, desc) {
+const manager = new class JKChief {
+    #connectionStatus = "no connection";
+    #messagePort = browser.runtime.connect({name: "JKIndex"});
+    
+    constructor() {
+        this.port.onMessage.addListener(message => {
+            switch (message.type) {
+                case "open": break;
+            }
+        });
+    }
+    
+    get state() {return this.#connectionStatus;}
+    get port() {return this.#messagePort;}
+};
+
+/* const define = new Proxy(function (target, name, desc) {
     try {
         let ret = {configurable: true, enumerable: false, get: undefined, set: undefined, value: undefined, writable: true};
         
@@ -210,7 +217,7 @@ define("cluster", function(length = 1) {
     return ret;
 });
 
-define("cut", function(x) {
+/* define("cut", function(x) {
     var ret = [this.toString()];
     
     if (x instanceof RegExp || typeof x == "string") {
@@ -224,7 +231,7 @@ define("cut", function(x) {
     }
     
     return ret;
-});
+}); *//*
 
 define("test", function(rx) {return rx.test(this.toString());});
 
@@ -234,4 +241,4 @@ define("toCodePoint", function() {return this.split("").map(u => u.codePointAt()
 
 define("toFloat", function() {return parseFloat(this.toString());});
 
-define("toInt", function(n) {return parseInt(this.toString(), n);});
+define("toInt", function(n) {return parseInt(this.toString(), n);}); */
