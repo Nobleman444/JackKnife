@@ -17,8 +17,11 @@ const JKError = function(...x) {
         default: x = [String(x[0]), {cause: JKError(...x.slice(1))}];
     }
     
-    return Object.assign(Error(...x), {name: "JKError"});
+    return Object.setPrototypeOf(Error(...x), JKError.prototype);
 };
+
+Object.setPrototypeOf(JKError.prototype, Error.prototype);
+Object.defineProperty(JKError.prototype, "name", {configurable: true, enumerable: false, writable: true, value: "JKError"});
 
 const manager = new class JKChief {
     #connectionStatus = "no connection";
