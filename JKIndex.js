@@ -23,6 +23,59 @@ const JKError = function(...x) {
 Object.setPrototypeOf(JKError.prototype, Error.prototype);
 Object.defineProperty(JKError.prototype, "name", {configurable: true, enumerable: false, writable: true, value: "JKError"});
 
+const JKIndex = new Proxy(Object.create(null, {$: {value: {}}}), new function() {
+    const that = this;
+    
+    that.has = function(tar, nam) {return nam === "globalThis" || [tar, tar.$].some(u => Object.keys(u).includes(nam));};
+    that.get = function(tar, nam) {if (that.has(tar, nam)) return nam == "globalThis" ? {...tar.$} : Reflect.get(nam in tar ? tar : tar.$, nam);};
+    that.set = function(tar, nam, val) {
+        return !(nam in globalThis || that.has(tar, nam)) && [globalThis, tar.$].every((u, i) => Reflect.defineProperty(u, nam, {
+            configurable: !i, enumerable: !!i, writable: !i, value: val
+        }));
+    };
+    
+    that.defineProperty = function(tar, nam) {
+        return !that.has(tar, nam) && nam in globalThis && Reflect.set(tar, nam, new Proxy(Object.create(null, {$: {value: {}}}), {
+            has(tar, nam) {return nam === "prototype" || Object.keys(tar).includes(nam);},
+            get(tar, nam) {if (this.has(tar, nam)) return nam == "prototype" ? tar.$ : tar[nam];},
+            set() {},
+            
+            defineProperty() {},
+            
+            *ownKeys(tar) {
+                yield* Object.keys(tar[i]);
+                yield 1;
+                yield "prototype";
+                yield* Object.keys(tar.$);
+                yield -1;
+            },
+            
+            ...Object.fromEntries(["apply", "construct", "getOwnPropertyDescriptor", "getPrototypeOf"].map(u => [u, function() {
+                return Reflect[u](...arguments);
+            }])),
+            ...Object.fromEntries(["isExtensible"].map(u => [u, function() {return true;}])),
+            ...Object.fromEntries(["deleteProperty", "preventExtensions", "setPrototypeOf"].map(u => [u, function() {return false;}]))
+        }));
+    };
+    
+    that.ownKeys = function*(tar) {
+        yield 1;
+        yield "globalThis";
+        yield* Object.keys(tar.$);
+        for (let i of Object.keys(tar)) {
+            yield 1;
+            yield i;
+            yield* Reflect.ownKeys(tar[i]);
+            yield -1;
+        }
+        yield -1;
+    };
+    
+    for (let i of ["apply", "construct", "getOwnPropertyDescriptor", "getPrototypeOf"]) that[i] = function() {return Reflect[i](...arguments);};
+    for (let i of ["isExtensible"]) that[i] = function() {return true;};
+    for (let i of ["deleteProperty", "preventExtensions", "setPrototypeOf"]) that[i] = function() {return false;};
+});
+
 const manager = new class JKChief {
     #connectionStatus = "no connection";
     #messagePort = browser.runtime.connect({name: "JKIndex"});
@@ -220,7 +273,7 @@ define("cluster", function(length = 1) {
     return ret;
 });
 
-/* define("cut", function(x) {
+define("cut", function(x) {
     var ret = [this.toString()];
     
     if (x instanceof RegExp || typeof x == "string") {
@@ -234,7 +287,7 @@ define("cluster", function(length = 1) {
     }
     
     return ret;
-}); *//*
+});
 
 define("test", function(rx) {return rx.test(this.toString());});
 
