@@ -23,6 +23,22 @@ const JKError = function(...x) {
 Object.setPrototypeOf(JKError.prototype, Error.prototype);
 Object.defineProperty(JKError.prototype, "name", {configurable: true, enumerable: false, writable: true, value: "JKError"});
 
+const manager = new class JKChief {
+    #connectionStatus = "no connection";
+    #messagePort = browser.runtime.connect({name: "JKIndex"});
+    
+    constructor() {
+        this.port.onMessage.addListener(message => {
+            switch (message.type) {
+                case "open": break;
+            }
+        });
+    }
+    
+    get state() {return this.#connectionStatus;}
+    get port() {return this.#messagePort;}
+};
+
 const JKIndex = new Proxy(Object.create(null, {$: {value: {}}}), new function() {
     const that = this;
     
@@ -44,10 +60,12 @@ const JKIndex = new Proxy(Object.create(null, {$: {value: {}}}), new function() 
             
             *ownKeys(tar) {
                 yield* Object.keys(tar[i]);
-                yield 1;
-                yield "prototype";
-                yield* Object.keys(tar.$);
-                yield -1;
+                if (Object.keys(tar.$).length) {
+                    yield 1;
+                    yield "prototype";
+                    yield* Object.keys(tar.$);
+                    yield -1;
+                }
             },
             
             ...Object.fromEntries(["apply", "construct", "getOwnPropertyDescriptor", "getPrototypeOf"].map(u => [u, function() {
@@ -75,22 +93,6 @@ const JKIndex = new Proxy(Object.create(null, {$: {value: {}}}), new function() 
     for (let i of ["isExtensible"]) that[i] = function() {return true;};
     for (let i of ["deleteProperty", "preventExtensions", "setPrototypeOf"]) that[i] = function() {return false;};
 });
-
-const manager = new class JKChief {
-    #connectionStatus = "no connection";
-    #messagePort = browser.runtime.connect({name: "JKIndex"});
-    
-    constructor() {
-        this.port.onMessage.addListener(message => {
-            switch (message.type) {
-                case "open": break;
-            }
-        });
-    }
-    
-    get state() {return this.#connectionStatus;}
-    get port() {return this.#messagePort;}
-};
 
 /* const define = new Proxy(function (target, name, desc) {
     try {
