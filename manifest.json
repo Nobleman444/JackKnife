@@ -1,7 +1,7 @@
 {
     "manifest_version" : 2,
     "name" : "JackKnife",
-    "version" : "0.4",
+    "version" : "0.5",
     
     "description" : "Adds JKIndex and the other JK files to web pages",
     
@@ -16,10 +16,6 @@
         "all_frames" : true,
         "run_at" : "document_start"
     }],
-    
-    "background" : {
-        "scripts" : [ "JKAgent.js" ]
-    },
     
     "permissions" : [
         "clipboardRead",

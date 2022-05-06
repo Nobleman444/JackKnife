@@ -23,7 +23,7 @@ const JKError = function(...x) {
 Object.setPrototypeOf(JKError.prototype, Error.prototype);
 Object.defineProperty(JKError.prototype, "name", {configurable: true, enumerable: false, writable: true, value: "JKError"});
 
-const manager = new class JKChief {
+/* const manager = new class JKChief {
     #connectionStatus = "no connection";
     #messagePort = browser.runtime.connect({name: "JKIndex"});
     
@@ -92,19 +92,17 @@ const JKIndex = new Proxy(Object.create(null, {$: {value: {}}}), new function() 
     for (let i of ["apply", "construct", "getOwnPropertyDescriptor", "getPrototypeOf"]) that[i] = function() {return Reflect[i](...arguments);};
     for (let i of ["isExtensible"]) that[i] = function() {return true;};
     for (let i of ["deleteProperty", "preventExtensions", "setPrototypeOf"]) that[i] = function() {return false;};
-});
+}); */
 
-/* const define = new Proxy(function (target, name, desc) {
+const define = new Proxy(Object.assign(function (target, name, desc) {
+    const roots = [globalThis, globalThis.wrappedJSObject];
+    
     try {
         let ret = {configurable: true, enumerable: false, get: undefined, set: undefined, value: undefined, writable: true};
         
-        if (name in target) throw JKError(`${target}.${name} already exists.`);
+        if (name in target) throw JKError([...target, name].join(".") + "already exists");
         
-        if ([
-            typeof desc != "object",
-            ["get", "set", "value"].every(u => !(u in desc)),
-            Reflect.ownKeys(desc).some(u => !(u in ret))
-        ].some(u => u)) desc = {value: desc};
+        if (typeof desc != "object" || !desc) desc = {value: desc};
         
         if ("value" in desc && typeof desc.value == "object") {
             Object.keys(desc.value).forEach(u => {Object.defineProperty(desc.value, u, {enumerable: false});});
@@ -120,24 +118,18 @@ const JKIndex = new Proxy(Object.create(null, {$: {value: {}}}), new function() 
             delete ret.set;
         }
         
-        Object.defineProperty(target, name, ret);
+        roots.forEach(u => {Object.defineProperty(target.reduce((acc, v) => acc[v], u), name, ret);});
     } catch (err) {
-        console.error(JKError(`Failed to define ${target}.${name}:`, err));
+        console.error(JKError("Failed to define " + [...target, name].join("."), err));
     } finally {
-        return target;
+        return target.reduce((acc, u) => acc[u], globalThis);
     }
-}, {
-    has(tar, nam) {return nam == "on" || nam in tar;},
-    get(tar, nam) {return nam == "on" ? tar.on ?? globalThis : tar[nam];},
-    set(tar, nam, val) {return tar[nam] = nam == "on" ? val ?? globalThis : val;},
-    
-    apply(tar, thi, arg) {return tar.call(null, tar.on ?? globalThis, ...arg);},
-    construct(tar, arg) {return tar.apply(null, arg);}
+}, {on: []}), {
+    apply(tar, thi, arg) {return Reflect.apply(tar, null, [tar.on, ...arg]);},
+    construct(tar, arg) {return Reflect.apply(tar, null, arg);}
 });
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
-define.on = globalThis;
-
 define("Logic", {value: {
     t(...x) {return x.reduce((acc, u) => acc + !!u, 0);},
     f(...x) {return x.reduce((acc, u) => acc + !u, 0);},
@@ -299,4 +291,4 @@ define("toCodePoint", function() {return this.split("").map(u => u.codePointAt()
 
 define("toFloat", function() {return parseFloat(this.toString());});
 
-define("toInt", function(n) {return parseInt(this.toString(), n);}); */
+define("toInt", function(n) {return parseInt(this.toString(), n);});
