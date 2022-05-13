@@ -1,294 +1,217 @@
-const JKError = function(...x) {
-    switch (x.length) {
-        case 0: x = ["<no message>"]; break;
-        case 1:
-            if (x[0] instanceof Error) x = ["<no message>", {cause: x[0]}];
-            else if (x[0] instanceof Object && "cause" in x[0]) x = ["<no message>", {cause: x[0].cause}];
-            else x = [String(x[0])];
-            break;
-            
-        case 2:
-            x[0] = String(x[0]);
-            if (x[1] instanceof Error) x[1] = {cause: x[1]};
-            else if (x[1] instanceof Object && "cause" in x[1]) x[1] = {cause: x[1].cause};
-            else x[1] = {cause: JKError(String(x[1]))};
-            break;
-            
-        default: x = [String(x[0]), {cause: JKError(...x.slice(1))}];
-    }
-    
-    return Object.setPrototypeOf(Error(...x), JKError.prototype);
-};
-
-Object.setPrototypeOf(JKError.prototype, Error.prototype);
-Object.defineProperty(JKError.prototype, "name", {configurable: true, enumerable: false, writable: true, value: "JKError"});
-
-/* const manager = new class JKChief {
-    #connectionStatus = "no connection";
-    #messagePort = browser.runtime.connect({name: "JKIndex"});
-    
-    constructor() {
-        this.port.onMessage.addListener(message => {
-            switch (message.type) {
-                case "open": break;
-            }
-        });
-    }
-    
-    get state() {return this.#connectionStatus;}
-    get port() {return this.#messagePort;}
-};
-
-const JKIndex = new Proxy(Object.create(null, {$: {value: {}}}), new function() {
-    const that = this;
-    
-    that.has = function(tar, nam) {return nam === "globalThis" || [tar, tar.$].some(u => Object.keys(u).includes(nam));};
-    that.get = function(tar, nam) {if (that.has(tar, nam)) return nam == "globalThis" ? {...tar.$} : Reflect.get(nam in tar ? tar : tar.$, nam);};
-    that.set = function(tar, nam, val) {
-        return !(nam in globalThis || that.has(tar, nam)) && [globalThis, tar.$].every((u, i) => Reflect.defineProperty(u, nam, {
-            configurable: !i, enumerable: !!i, writable: !i, value: val
-        }));
-    };
-    
-    that.defineProperty = function(tar, nam) {
-        return !that.has(tar, nam) && nam in globalThis && Reflect.set(tar, nam, new Proxy(Object.create(null, {$: {value: {}}}), {
-            has(tar, nam) {return nam === "prototype" || Object.keys(tar).includes(nam);},
-            get(tar, nam) {if (this.has(tar, nam)) return nam == "prototype" ? tar.$ : tar[nam];},
-            set() {},
-            
-            defineProperty() {},
-            
-            *ownKeys(tar) {
-                yield* Object.keys(tar[i]);
-                if (Object.keys(tar.$).length) {
-                    yield 1;
-                    yield "prototype";
-                    yield* Object.keys(tar.$);
-                    yield -1;
-                }
-            },
-            
-            ...Object.fromEntries(["apply", "construct", "getOwnPropertyDescriptor", "getPrototypeOf"].map(u => [u, function() {
-                return Reflect[u](...arguments);
-            }])),
-            ...Object.fromEntries(["isExtensible"].map(u => [u, function() {return true;}])),
-            ...Object.fromEntries(["deleteProperty", "preventExtensions", "setPrototypeOf"].map(u => [u, function() {return false;}]))
-        }));
-    };
-    
-    that.ownKeys = function*(tar) {
-        yield 1;
-        yield "globalThis";
-        yield* Object.keys(tar.$);
-        for (let i of Object.keys(tar)) {
-            yield 1;
-            yield i;
-            yield* Reflect.ownKeys(tar[i]);
-            yield -1;
-        }
-        yield -1;
-    };
-    
-    for (let i of ["apply", "construct", "getOwnPropertyDescriptor", "getPrototypeOf"]) that[i] = function() {return Reflect[i](...arguments);};
-    for (let i of ["isExtensible"]) that[i] = function() {return true;};
-    for (let i of ["deleteProperty", "preventExtensions", "setPrototypeOf"]) that[i] = function() {return false;};
-}); */
-
-const define = new Proxy(Object.assign(function (target, name, desc) {
-    const roots = [globalThis, globalThis.wrappedJSObject];
-    
-    try {
-        let ret = {configurable: true, enumerable: false, get: undefined, set: undefined, value: undefined, writable: true};
-        
-        if (name in target) throw JKError([...target, name].join(".") + "already exists");
-        
-        if (typeof desc != "object" || !desc) desc = {value: desc};
-        
-        if ("value" in desc && typeof desc.value == "object") {
-            Object.keys(desc.value).forEach(u => {Object.defineProperty(desc.value, u, {enumerable: false});});
+if (true) {
+    const JKError = function(...x) {
+        switch (x.length) {
+            case 0: x = ["<no message>"]; break;
+            case 1:
+                if (x[0] instanceof Error) x = ["<no message>", {cause: x[0]}];
+                else if (x[0] instanceof Object && "cause" in x[0]) x = ["<no message>", {cause: x[0].cause}];
+                else x = [String(x[0])];
+                break;
+                
+            case 2:
+                x[0] = String(x[0]);
+                if (x[1] instanceof Error) x[1] = {cause: x[1]};
+                else if (x[1] instanceof Object && "cause" in x[1]) x[1] = {cause: x[1].cause};
+                else x[1] = {cause: JKError(String(x[1]))};
+                break;
+                
+            default: x = [String(x[0]), {cause: JKError(...x.slice(1))}];
         }
         
-        Object.assign(ret, desc);
-        
-        if ("get" in desc || "set" in desc) {
-            delete ret.value;
-            delete ret.writable;
-        } else {
-            delete ret.get;
-            delete ret.set;
-        }
-        
-        roots.forEach(u => {Object.defineProperty(target.reduce((acc, v) => acc[v], u), name, ret);});
-    } catch (err) {
-        console.error(JKError("Failed to define " + [...target, name].join("."), err));
-    } finally {
-        return target.reduce((acc, u) => acc[u], globalThis);
-    }
-}, {on: []}), {
-    apply(tar, thi, arg) {return Reflect.apply(tar, null, [tar.on, ...arg]);},
-    construct(tar, arg) {return Reflect.apply(tar, null, arg);}
-});
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
-define("Logic", {value: {
-    t(...x) {return x.reduce((acc, u) => acc + !!u, 0);},
-    f(...x) {return x.reduce((acc, u) => acc + !u, 0);},
+        return Object.setPrototypeOf(Error(...x), JKError.prototype);
+    };
     
-    all(...x) {return this.t(...x) == x.length;},
-    notall(...x) {return !this.all(...x);},
-    
-    any(...x) {return this.t(...x) >= 1;},
-    notany(...x) {return !this.any(...x);},
-    
-    atl(n, ...x) {
-        if (n >= 0) return this.t(...x) >= n;
-        return this.f(...x) >= -n;
-    },
-    less(n, ...x) {return !this.atl(n, ...x);},
-    
-    atm(n, ...x) {
-        if (n >= 0) return this.t(...x) <= n;
-        return this.f(...x) <= -n;
-    },
-    more(n, ...x) {return !this.atm(n, ...x);},
-    
-    num(n, ...x) {
-        if (n >= 0) return this.t(...x) == n;
-        return this.f(...x) == -n;
-    },
-    notnum(n, ...x) {return !this.num(n, ...x);},
-    
-    one(...x) {return this.num(1, ...x);},
-    notone(...x) {return !this.one(...x);}
-}});
-
-define("isInteger", function(x) {return Number.isInteger(+x);});
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Array
-define.on = Array;
-
-define("sequence", function(stop = 0, start = 0, step = 1) {
-    var ret = [], string = false;
-    
-    if (typeof stop == "string" && stop.length) {
-        string = true;
-        stop = stop.codePointAt();
-    }
-    
-    if (typeof start == "string" && start.length) {
-        string = true;
-        start = start.codePointAt();
-    }
-    
-    [stop, start, step].forEach((u, i) => {
-        if (typeof u != "number" || !isFinite(u)) throw JKError(`Array.sequence: Argument ${i} must be a finite number or non-empty string.`);
+    Object.defineProperties(Object.setPrototypeOf(JKError.prototype, Error.prototype), {
+        message: {configurable: true, enumerable: false, writable: true, value: ""},
+        name: {configurable: true, enumerable: false, writable: true, value: "JKError"}
     });
     
-    switch (Math.sign((stop - start) * step)) {
-        case -1: step *= -1;
-        case 1: for (let i = start; (stop - start) * (stop - i) > 0; i += step) ret.push(string ? String.fromCodePoint(i) : i);
-        default: return ret;
-    }
-});
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Array.prototype
-define.on = Array.prototype;
-
-define("cluster", function(length = 1) {
-    var ret = [], n = Math.max(Math.round(+length), 1);
-    
-    if (n == n && n > 0) for (let i = 0; i < this.length; i += n) ret.push(this.slice(i, i + n));
-    
-    return ret;
-});
-
-define("flatten", function() {
-    var ret = this.slice(0);
-    
-    for (let i = 0; i < ret.length; ) {
-        if (Array.isArray(ret[i])) ret.splice(i, 1, ...ret[i]);
-        else i++;
-    }
-    
-    return ret;
-});
-
-define("last", {get() {return this[this.length - 1];}, set(x) {this[this.length - 1] = x;}});
-
-define("subarr", function(start, length) {return this.slice(start, start + length);});
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Math
-define.on = Math;
-
-define("mround", function(n, multiple = 10, direction = 0) {
-    var ret = n / multiple;
-    
-    switch (Math.sign(direction)) {
-        case 1: ret = Math.ceil(ret); break;
-        case -1: ret = Math.floor(ret); break;
-        default: ret = Math.round(ret);
-    }
-    
-    return ret * multiple;
-});
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Number.prototype
-define.on = Number.prototype;
-
-define("toChar", function() {
-    var val = Math.round(this.valueOf());
-    
-    if (val >= 0 && val < 0xd800 || val > 0xdfff && val <= 0xffff) return String.fromCharCode(val);
-    if (val > 0xffff && val <= 0x10ffff) return String.fromCodePoint(val);
-    return "";
-});
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~String
-define.on = String;
-
-define("lev", function(a, b) {
-    [a, b] = [a, b].map(u => u.toString());
-    
-    if (!a.length) return b.length;
-    if (!b.length) return a.length;
-    if (a.charAt() == b.charAt()) return String.lev(a.slice(1), b.slice(1));
-    return Math.min(...[[a.slice(1), b], [a, b.slice(1)], [a.slice(1), b.slice(1)]].map(u => String.lev(...u))) + 1;
-});
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~String.prototype
-define.on = String.prototype;
-
-define("cluster", function(length = 1) {
-    var ret = [], n = Math.max(Math.round(+length), 1);
-    
-    if (n != n || n <= 0 || this.length == 0) ret.push("");
-    else for (let i = 0; i < this.length; i += n) ret.push(this.slice(i, i + n));
-    
-    return ret;
-});
-
-define("cut", function(x) {
-    var ret = [this.toString()];
-    
-    if (x instanceof RegExp || typeof x == "string") {
-        const f = ["ignoreCase", "multiline", "dotAll", "unicode"].reduce((acc, u, i) => acc + (x[u] ? "imsu".charAt(i) : ""), "");
-        const rx = RegExp(x, f);
+    const define = new Proxy(Object.assign(function (target, name, desc) {
+        const tarObj = target.reduce((acc, u) => acc[u], globalThis);
         
-        for (let X = x(); X; X = x()) {
-            let t = ret.pop();
-            ret.push(...[..."`&'"].map(u => t.replace()));
+        try {
+            const ret = {configurable: true, enumerable: false, get: undefined, set: undefined, value: undefined, writable: true};
+            
+            if (name in tarObj) throw JKError([...target, name].join(".") + " already exists");
+            
+            if (typeof desc != "object" || !desc) desc = {value: desc};
+            
+            if ("value" in desc && typeof desc.value == "object" && desc.value) {
+                Object.keys(desc.value).forEach(u => {Object.defineProperty(desc.value, u, {enumerable: false});});
+            }
+            
+            Object.assign(ret, desc);
+            
+            if ("value" in desc) {
+                delete ret.get;
+                delete ret.set;
+            } else {
+                delete ret.value;
+                delete ret.writable;
+                ret.set ??= function(x) {new define(target, name, {value: x});};
+            }
+            
+            Object.defineProperty(tarObj, name, ret);
+        } catch (err) {
+            console.error(JKError("Failed to define " + [...target, name].join("."), err));
+        } finally {
+            return tarObj;
         }
-    }
+    }, {on: []}), {
+        apply(tar, thi, arg) {return Reflect.apply(tar, null, [tar.on, ...arg]);},
+        construct(tar, arg) {return Reflect.apply(tar, null, arg);}
+    });
     
-    return ret;
-});
-
-define("test", function(rx) {return rx.test(this.toString());});
-
-define("toCharCode", function() {return this.split("").map(u => u.charCodeAt());});
-
-define("toCodePoint", function() {return this.split("").map(u => u.codePointAt());});
-
-define("toFloat", function() {return parseFloat(this.toString());});
-
-define("toInt", function(n) {return parseInt(this.toString(), n);});
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
+    [..."unItf"].map(u => "$" + u).forEach((u, i) => {define(u, [undefined, NaN, Infinity, true, false][i]);});
+    
+    define("$A", {value: new Proxy(Array, {apply(tar, thi, arg) {return tar.isArray(...arg);}})});
+    
+    define("$O", Object);
+    
+    define("$P", function(target, handler) {return new Proxy(target, handler);});
+    
+    define("$R", {value: Reflect});
+    
+    define("$Y", {value: new Proxy(Symbol, {
+        get(tar, nam) {
+            if (Reflect.has(tar, nam)) return Reflect.get(tar, nam);
+            return Reflect.apply(typeof nam == "string" ? tar.key : typeof nam == "symbol" ? tar.keyFor : tar, $u, [nam]);
+        }
+    })});
+    
+    define("Logic", {value: {
+        t(...x) {return x.reduce((acc, u) => acc + !!u, 0);},
+        f(...x) {return x.reduce((acc, u) => acc + !u, 0);},
+        all(...x) {return Logic.t(...x) == x.length;},
+        any(...x) {return Logic.t(...x) >= 1;},
+        atl(n, ...x) {return n >= 0 ? Logic.t(...x) >= n : Logic.f(...x) >= -n;},
+        atm(n, ...x) {return n >= 0 ? Logic.t(...x) <= n : Logic.f(...x) <= -n;},
+        num(n, ...x) {return n >= 0 ? Logic.t(...x) == n : Logic.f(...x) == -n;},
+        one(...x) {return Logic.num(1, ...x);}
+    }});
+    
+    define("isInteger", function(x) {return Number.isInteger(+x);});
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Array
+    define.on = ["Array"];
+    
+    define("sequence", function(stop = 0, start = 0, step = 1) {
+        var ret = [], string = false;
+        
+        if (typeof stop == "string" && stop.length) {
+            string = true;
+            stop = stop.codePointAt();
+        }
+        
+        if (typeof start == "string" && start.length) {
+            string = true;
+            start = start.codePointAt();
+        }
+        
+        [stop, start, step].forEach((u, i) => {
+            if (typeof u != "number" || !isFinite(u)) throw JKError(`Array.sequence: Argument ${i} must be a finite number or non-empty string.`);
+        });
+        
+        switch (Math.sign((stop - start) * step)) {
+            case -1: step *= -1;
+            case 1:
+                for (let i = start; (stop - start) * (stop - i) > 0; i += step) {
+                    if (string && (i >= 0 && i < 0xd800 || i >= 0xe000 && i <= 0x10ffff)) ret.push(String.fromCodePoint(i));
+                    else if (!string) ret.push(i);
+                };
+            default: return ret;
+        }
+    });
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Array.prototype
+    define.on = ["Array", "prototype"];
+    
+    // define("all", {get() {return Logic.all.apply($u, this);}});
+    
+    // define("any", {get() {return Logic.any.apply($u, this);}});
+    
+    define("cluster", function(length = 1) {
+        var ret = this.slice(0), n = Math.max(Math.round(+length), 1);
+        if (n == n) for (let i = 0; i < this.length; i++) ret.spliceIn(i, n);
+        return ret;
+    });
+    
+    define("flatten", function() {
+        var ret = this.slice(0);
+        for (let i = 0; i < ret.length; ) {
+            if ($A(ret[i])) ret.splice(i, 1, ...ret[i]);
+            else i++;
+        }
+        return ret;
+    });
+    
+    define("last", {get() {return this[this.length - 1];}, set(x) {this[this.length - 1] = x;}});
+    
+    define("li", {get() {return this.length - 1;}, set(x) {this.length = x + 1;}});
+    
+    define("pluck", function(index) {return this.splice(index, 1)[0];});
+    
+    define("spliceIn", function(start, length) {return this.splice(start, length, this.slice(start, start + length));});
+    
+    define("subarr", function(start, length) {return this.slice(start, start + length);});
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Math
+    define.on = ["Math"];
+    
+    define("mround", function(n, multiple = 10, direction) {
+        var ret = n / multiple;
+        switch (Math.sign(direction)) {
+            case 1: ret = Math.ceil(ret); break;
+            case -1: ret = Math.floor(ret); break;
+            case 0: ret = Math.trunc(ret); break;
+            default: ret = Math.round(ret);
+        }
+        return ret * multiple;
+    });
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Number.prototype
+    define.on = ["Number", "prototype"];
+    
+    define("toChar", function() {
+        var val = Math.round(this.valueOf());
+        
+        if (val >= 0 && val < 0xd800 || val > 0xdfff && val <= 0xffff) return String.fromCharCode(val);
+        if (val > 0xffff && val <= 0x10ffff) return String.fromCodePoint(val);
+        return "";
+    });
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~String
+    define.on = ["String"];
+    
+    define("lev", function(a, b) {
+        [a, b] = [a, b].map(u => String(u));
+        
+        if (!a.length) return b.length;
+        if (!b.length) return a.length;
+        if (a.charAt() == b.charAt()) return String.lev(a.slice(1), b.slice(1));
+        return Math.min(...[[a.slice(1), b], [a, b.slice(1)], [a.slice(1), b.slice(1)]].map(u => String.lev(...u))) + 1;
+    });
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~String.prototype
+    define.on = ["String", "prototype"];
+    
+    define("cluster", function(length = 1) {
+        var ret = [], n = Math.max(Math.round(+length), 1);
+        
+        if (n != n || this.length == 0) ret.push("");
+        else for (let i = 0; i < this.length; i += n) ret.push(this.slice(i, i + n));
+        
+        return ret;
+    });
+    
+    define("test", function(rx) {return rx.test(this.toString());});
+    
+    define("toCharCode", function() {return this.split("").map(u => u.charCodeAt());});
+    
+    define("toCodePoint", function() {return this.split("").map(u => u.codePointAt());});
+    
+    define("toFloat", function() {return parseFloat(this.toString());});
+    
+    define("toInt", function(n) {return parseInt(this.toString(), n);});
+}
