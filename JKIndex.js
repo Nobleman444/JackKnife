@@ -63,9 +63,11 @@ if (true) {
     });
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
-    [..."unItf"].map(u => "$" + u).forEach((u, i) => {define(u, [undefined, NaN, Infinity, true, false][i]);});
+    [].forEach.call("unItf", u => {define("$" + u, {u: undefined, n: NaN, I: Infinity, t: true, f: false}[u]);});
     
     define("$A", {value: new Proxy(Array, {apply(tar, thi, arg) {return tar.isArray(...arg);}})});
+    
+    define("$doc", {value: document});
     
     define("$O", Object);
     
@@ -127,9 +129,9 @@ if (true) {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Array.prototype
     define.on = ["Array", "prototype"];
     
-    // define("all", {get() {return Logic.all.apply($u, this);}});
+    define("all", {get() {return Logic.all.apply($u, this);}});
     
-    // define("any", {get() {return Logic.any.apply($u, this);}});
+    define("any", {get() {return Logic.any.apply($u, this);}});
     
     define("cluster", function(length = 1) {
         var ret = this.slice(0), n = Math.max(Math.round(+length), 1);
