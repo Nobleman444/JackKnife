@@ -48,7 +48,7 @@ if (true) {
             } else {
                 delete ret.value;
                 delete ret.writable;
-                ret.set ??= function(x) {new define(target, name, {value: x});};
+                ret.set ??= function(x) {Object.defineProperty(tarObj, name, {value: x});};
             }
             
             Object.defineProperty(tarObj, name, ret);
