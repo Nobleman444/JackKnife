@@ -36,7 +36,7 @@ if (true) {
             
             if (typeof desc != "object" || !desc) desc = {value: desc};
             
-            if ("value" in desc && typeof desc.value == "object" && desc.value) {
+            if ("value" in desc && desc.value && Object.getPrototypeOf(desc.value) == Object.prototype) {
                 Object.keys(desc.value).forEach(u => {Object.defineProperty(desc.value, u, {enumerable: false});});
             }
             
@@ -71,7 +71,9 @@ if (true) {
     
     define("$O", Object);
     
-    define("$P", function(target, handler) {return new Proxy(target, handler);});
+    define("$P", function(target, handler = {}, nothing = []) {return new Proxy(target, new function() {
+        var ret = Object.fromEntries(Object.getOwnPropertyNames(Reflect).map(u => [u, Reflect[u]]));
+    });});
     
     define("$R", {value: Reflect});
     
@@ -93,7 +95,11 @@ if (true) {
         one(...x) {return Logic.num(1, ...x);}
     }});
     
+    define("ifFinite", function(x) {return isFinite(x) ? +x : x;});
+    
     define("isInteger", function(x) {return Number.isInteger(+x);});
+    
+    define("toFinite", function(...x) {for (let i of x) if (isFinite(i)) return +i;});
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Array
     define.on = ["Array"];
@@ -135,7 +141,7 @@ if (true) {
     
     define("cluster", function(length = 1) {
         var ret = this.slice(0), n = Math.max(Math.round(+length), 1);
-        if (n == n) for (let i = 0; i < this.length; i++) ret.spliceIn(i, n);
+        if (n == n) for (let i = 0; i < ret.length; i++) ret.spliceIn(i, n);
         return ret;
     });
     
