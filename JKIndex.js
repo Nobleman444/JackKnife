@@ -80,20 +80,25 @@ if (true) {
     define("$Y", {value: new Proxy(Symbol, {
         get(tar, nam) {
             if (Reflect.has(tar, nam)) return Reflect.get(tar, nam);
-            return Reflect.apply(typeof nam == "string" ? tar.key : typeof nam == "symbol" ? tar.keyFor : tar, $u, [nam]);
+            return Reflect.apply(typeof nam == "string" ? tar.for : typeof nam == "symbol" ? tar.keyFor : tar, $u, [nam]);
         }
     })});
     
-    define("Logic", {value: {
-        t(...x) {return x.reduce((acc, u) => acc + !!u, 0);},
-        f(...x) {return x.reduce((acc, u) => acc + !u, 0);},
-        all(...x) {return Logic.t(...x) == x.length;},
-        any(...x) {return Logic.t(...x) >= 1;},
-        atl(n, ...x) {return n >= 0 ? Logic.t(...x) >= n : Logic.f(...x) >= -n;},
-        atm(n, ...x) {return n >= 0 ? Logic.t(...x) <= n : Logic.f(...x) <= -n;},
-        num(n, ...x) {return n >= 0 ? Logic.t(...x) == n : Logic.f(...x) == -n;},
-        one(...x) {return Logic.num(1, ...x);}
-    }});
+    define("Logic", {value: Reflect.construct(function() {
+        var d = f => {configurable: true, enumerable: false, writable: true, value: f};
+        
+        Object.defineProperties(this, {
+            t: d(function (...x) {return x.reduce((acc, u) => acc + !!u, 0);}),
+            f: d(function (...x) {return x.reduce((acc, u) => acc + !u, 0);}),
+            all: d(function (...x) {return this.t(...x) == x.length;}),
+            any: d(function (...x) {return this.t(...x) >= 1;}),
+            atl: d(function (n, ...x) {return n >= 0 ? this.t(...x) >= n : this.f(...x) >= -n;}),
+            atm: d(function (n, ...x) {return n >= 0 ? this.t(...x) <= n : this.f(...x) <= -n;}),
+            num: d(function (n, ...x) {return n >= 0 ? this.t(...x) == n : this.f(...x) == -n;}),
+            one: d(function (...x) {return this.num(1, ...x);}),
+            [Symbol.toStringTag]: Object.assign(d("Logic"), {writable: false})
+        });
+    }, [], Object)});
     
     define("ifFinite", function(x) {return isFinite(x) ? +x : x;});
     
@@ -134,10 +139,6 @@ if (true) {
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Array.prototype
     define.on = ["Array", "prototype"];
-    
-    define("all", {get() {return Logic.all.apply($u, this);}});
-    
-    define("any", {get() {return Logic.any.apply($u, this);}});
     
     define("cluster", function(length = 1) {
         var ret = this.slice(0), n = Math.max(Math.round(+length), 1);
