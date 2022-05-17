@@ -85,7 +85,7 @@ if (true) {
     })});
     
     define("Logic", {value: Reflect.construct(function() {
-        var d = f => {configurable: true, enumerable: false, writable: true, value: f};
+        var d = f => ({configurable: true, enumerable: false, writable: true, value: f});
         
         Object.defineProperties(this, {
             t: d(function (...x) {return x.reduce((acc, u) => acc + !!u, 0);}),
@@ -165,6 +165,18 @@ if (true) {
     
     define("subarr", function(start, length) {return this.slice(start, start + length);});
     
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Date
+    define.on = ["Date"];
+    
+    ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"].forEach((u, i) => {
+        define(u, {configurable: false, enumerable: true, writable: false, value: i});
+    });
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Date.prototype
+    define.on = ["Date", "prototype"];
+    
+    //define();
+    
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Math
     define.on = ["Math"];
     
@@ -214,13 +226,13 @@ if (true) {
         return ret;
     });
     
-    define("test", function(rx) {return rx.test(this.toString());});
+    define("test", function(rx) {return rx.test(this.valueOf());});
     
     define("toCharCode", function() {return this.split("").map(u => u.charCodeAt());});
     
     define("toCodePoint", function() {return this.split("").map(u => u.codePointAt());});
     
-    define("toFloat", function() {return parseFloat(this.toString());});
+    define("toFloat", function() {return parseFloat(this.valueOf());});
     
-    define("toInt", function(n) {return parseInt(this.toString(), n);});
+    define("toInt", function(n) {return parseInt(this.valueOf(), n);});
 }
