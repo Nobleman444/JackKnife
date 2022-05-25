@@ -62,10 +62,24 @@ if (true) {
         construct(tar, arg) {return Reflect.apply(tar, null, arg);}
     });
     
+    const prox = {
+        Object: {
+            
+        },
+        Reflect: {
+            app: "apply", con: "construct", def: "defineProperty", del: "deleteProperty", key: "ownKeys", gpd: "getOwnPropertyDescriptor",
+            iex: "isExtensible", pex: "preventExtensions", gpo: "getPrototypeOf", spo: "setPrototypeOf"
+        },
+        Symbol: {
+            ai: "asyncIterator", hi: "hasInstance", i: "iterator", ics: "isConcatSpreadable", m: "match", ma: "matchAll", r: "replace", sc: "species",
+            sl: "split", sr: "search", tp: "toPrimitive", tst: "toStringTag", u: "unscopables"
+        }
+    };
+    
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
     [].forEach.call("unItf", u => {define("$" + u, {u: undefined, n: NaN, I: Infinity, t: true, f: false}[u]);});
     
-    define("$A", {value: new Proxy(Array, {apply(tar, thi, arg) {return tar.isArray(...arg);}})});
+    define("$A", {value: new Proxy(Array, {apply(tar, thi, arg) {return tar.isArray(arg[0]);}})});
     
     define("$doc", {value: document});
     
@@ -75,7 +89,9 @@ if (true) {
         var ret = Object.fromEntries(Object.getOwnPropertyNames(Reflect).map(u => [u, Reflect[u]]));
     });});
     
-    define("$R", {value: Reflect});
+    define("$R", {value: new Proxy(prox.Reflect, {
+        has(tar, nam) {return [tar, Reflect].some(u => Reflect.has(u, nam));}
+    })});
     
     define("$Y", {value: new Proxy(Symbol, {
         get(tar, nam) {
@@ -175,7 +191,11 @@ if (true) {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Date.prototype
     define.on = ["Date", "prototype"];
     
-    //define();
+    define("date", {get() {return this.getDate;}, set(x) {this.setDate(x);}});
+    
+    define("day", {get() {return this.getDay;}, set(x) {
+        
+    }});
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Math
     define.on = ["Math"];
