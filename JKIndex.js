@@ -90,13 +90,15 @@ if (true) {
     });});
     
     define("$R", {value: new Proxy(prox.Reflect, {
-        has(tar, nam) {return [tar, Reflect].some(u => Reflect.has(u, nam));}
+        has(tar, nam) {return Reflect.has(tar, nam) || Reflect.has(Reflect, nam);},
+        get(tar, nam) {return Reflect.get(Reflect, nam in tar ? tar[nam] : nam);},
+        //set(tar, nam, val) {return Reflect.set(Reflect, );}
     })});
     
     define("$Y", {value: new Proxy(Symbol, {
         get(tar, nam) {
             if (Reflect.has(tar, nam)) return Reflect.get(tar, nam);
-            return Reflect.apply(typeof nam == "string" ? tar.for : typeof nam == "symbol" ? tar.keyFor : tar, $u, [nam]);
+            return Reflect.apply(typeof nam == "string" ? tar.for : typeof nam == "symbol" ? tar.keyFor : tar, undefined, [nam]);
         }
     })});
     
@@ -184,18 +186,50 @@ if (true) {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Date
     define.on = ["Date"];
     
-    ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"].forEach((u, i) => {
-        define(u, {configurable: false, enumerable: true, writable: false, value: i});
-    });
+    ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"].forEach((u, i) => {define(u, i);});
+    
+    ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].forEach((u, i) => {define(u, i);});
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Date.prototype
     define.on = ["Date", "prototype"];
     
-    define("date", {get() {return this.getDate;}, set(x) {this.setDate(x);}});
+    define("date", {get() {return this.getDate();}, set(x) {this.setDate(x);}});
     
-    define("day", {get() {return this.getDay;}, set(x) {
-        
-    }});
+    define("day", {get() {return this.getDay();}, set(x) {this.setDate(x - this.getDay() + this.getDate());}});
+    
+    define("hours", {get() {return this.getHours();}, set(x) {this.setHours(x);}});
+    
+    define("milliseconds", {get() {return this.getMilliseconds();}, set(x) {this.setMilliseconds(x);}});
+    
+    define("minutes", {get() {return this.getMinutes();}, set(x) {this.setMinutes(x);}});
+    
+    define("month", {get() {return this.getMonth();}, set(x) {this.setMonth(x);}});
+    
+    define("seconds", {get() {return this.getSeconds();}, set(x) {this.setSeconds(x);}});
+    
+    define("setDay", function(x) {this.setDate(x - this.getDay() + this.getDate());});
+    
+    define("setUTCDay", function(x) {this.setUTCDate(x - this.getUTCDay() + this.getUTCDate());});
+    
+    define("time", {get() {return this.getTime();}, set(x) {this.setTime(x);}});
+    
+    define("utcDate", {get() {return this.getUTCDate();}, set(x) {this.setUTCDate(x);}});
+    
+    define("utcDay", {get() {return this.getUTCDay();}, set(x) {this.setUTCDate(x - this.getUTCDay() + this.getUTCDate());}});
+    
+    define("utcHours", {get() {return this.getUTCHours();}, set(x) {this.setUTCHours(x);}});
+    
+    define("utcMilliseconds", {get() {return this.getUTCMilliseconds();}, set(x) {this.setUTCMilliseconds(x);}});
+    
+    define("utcMinutes", {get() {return this.getUTCMinutes();}, set(x) {this.setUTCMinutes(x);}});
+    
+    define("utcMonth", {get() {return this.getUTCMonth();}, set(x) {this.setUTCMonth(x);}});
+    
+    define("utcSeconds", {get() {return this.getUTCSeconds();}, set(x) {this.setUTCSeconds(x);}});
+    
+    define("utcYear", {get() {return this.getUTCFullYear();}, set(x) {this.setUTCFullYear(x);}});
+    
+    define("year", {get() {return this.getFullYear();}, set(x) {this.setFullYear(x);}});
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Math
     define.on = ["Math"];
