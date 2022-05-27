@@ -36,10 +36,6 @@ if (true) {
             
             if (typeof desc != "object" || !desc) desc = {value: desc};
             
-            if ("value" in desc && desc.value && Object.getPrototypeOf(desc.value) == Object.prototype) {
-                Object.keys(desc.value).forEach(u => {Object.defineProperty(desc.value, u, {enumerable: false});});
-            }
-            
             Object.assign(ret, desc);
             
             if ("value" in desc) {
@@ -92,7 +88,11 @@ if (true) {
     define("$R", {value: new Proxy(prox.Reflect, {
         has(tar, nam) {return Reflect.has(tar, nam) || Reflect.has(Reflect, nam);},
         get(tar, nam) {return Reflect.get(Reflect, nam in tar ? tar[nam] : nam);},
-        //set(tar, nam, val) {return Reflect.set(Reflect, );}
+        set(tar, nam, val) {return Reflect.has(Reflect, val) && Reflect.set(tar, nam, val);},
+        
+        defineProperty(tar, nam, des) {
+            
+        }
     })});
     
     define("$Y", {value: new Proxy(Symbol, {
