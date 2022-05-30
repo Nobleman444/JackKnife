@@ -91,7 +91,13 @@ if (true) {
         set(tar, nam, val) {return Reflect.has(Reflect, val) && Reflect.set(tar, nam, val);},
         
         defineProperty(tar, nam, des) {
+            const {abbreviation, value, get, set} = des;
+            var ret = {configurable: true, enumerable: false};
             
+            if ([get, set].some(u => typeof u == "function")) ret = Reflect.defineProperty(Reflect, nam, Object.assign(ret, {get, set}));
+            else ret = Reflect.defineProperty(Reflect, nam, Object.assign(ret, {writable: true, value}));
+            
+            return ret && (typeof abbreviation != "string" || Reflect.set(tar, abbreviation, nam));
         }
     })});
     
