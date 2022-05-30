@@ -93,19 +93,20 @@ if (true) {
         defineProperty(tar, nam, des) {
             const {abbreviation, value, get, set} = des;
             var ret = {configurable: true, enumerable: false};
+            Object.assign(ret, [get, set].some(u => typeof u == "function") ? {get, set} : {writable: true, value});
             
-            if ([get, set].some(u => typeof u == "function")) ret = Reflect.defineProperty(Reflect, nam, Object.assign(ret, {get, set}));
-            else ret = Reflect.defineProperty(Reflect, nam, Object.assign(ret, {writable: true, value}));
-            
-            return ret && (typeof abbreviation != "string" || Reflect.set(tar, abbreviation, nam));
+            return Reflect.defineProperty(Reflect, nam, ret) && (typeof abbreviation != "string" || Reflect.set(tar, abbreviation, nam));
         }
     })});
     
-    define("$Y", {value: new Proxy(Symbol, {
+    define("$Y", {value: new Proxy(prox.Symbol, {
+        has(tar, nam) {return Reflect.has(tar, nam) || Reflect.has(Symbol, nam);},
         get(tar, nam) {
-            if (Reflect.has(tar, nam)) return Reflect.get(tar, nam);
-            return Reflect.apply(typeof nam == "string" ? tar.for : typeof nam == "symbol" ? tar.keyFor : tar, undefined, [nam]);
-        }
+            if (Reflect.has(tar, nam)) return this.get(tar, tar[nam]);
+            if (Reflect.has(Symbol, nam)) return Reflect.get(Symbol, nam);
+            return Reflect.apply(typeof nam == "string" ? Symbol.for : typeof nam == "symbol" ? Symbol.keyFor : Symbol, undefined, [nam]);
+        },
+        set(tar, nam, val) {}
     })});
     
     define("Logic", {value: Reflect.construct(function() {
