@@ -18,7 +18,7 @@ if (true) {
             default: x = [String(x[0]), {cause: JKError(...x.slice(1))}];
         }
         
-        return Object.setPrototypeOf(Error(...x), JKError.prototype);
+        return Reflect.construct(Error, x, JKError);
     };
     
     Object.defineProperties(Object.setPrototypeOf(JKError.prototype, Error.prototype), {
@@ -86,9 +86,9 @@ if (true) {
     });});
     
     define("$R", {value: new Proxy(prox.Reflect, {
-        has(tar, nam) {return Reflect.has(tar, nam) || Reflect.has(Reflect, nam);},
-        get(tar, nam) {return Reflect.get(Reflect, nam in tar ? tar[nam] : nam);},
-        set(tar, nam, val) {return Reflect.has(Reflect, val) && Reflect.set(tar, nam, val);},
+        has(tar, nam) {return Reflect.has(Reflect, tar.hasOwnProperty(nam) ? tar[nam] : nam);},
+        get(tar, nam) {return Reflect.get(Reflect, tar.hasOwnProperty(nam) ? tar[nam] : nam);},
+        set(tar, nam, val) {return Reflect.hasOwnProperty(val) && Reflect.set(tar, nam, val);},
         
         defineProperty(tar, nam, des) {
             const {abbreviation, value, get, set} = des;
@@ -97,13 +97,24 @@ if (true) {
             
             return Reflect.defineProperty(Reflect, nam, ret) && (typeof abbreviation != "string" || Reflect.set(tar, abbreviation, nam));
         },
-        deleteProperty(tar, nam) {}
+        deleteProperty(tar, nam) {
+            if (tar.hasOwnProperty(nam)) return Reflect.deleteProperty(Reflect, tar[nam]), Reflect.deleteProperty(tar, nam);
+            return Reflect.deleteProperty(Reflect, nam);
+        },
+        
+        ownKeys(tar) {
+            var ret = Reflect.ownKeys(Reflect);
+            
+            ret.forEach((u, i, arr) => {});
+            
+            return ret;
+        }
     })});
     
     define("$Y", {value: new Proxy(prox.Symbol, {
-        has(tar, nam) {return Reflect.has(tar, nam) || Reflect.has(Symbol, nam);},
+        has(tar, nam) {return Reflect.has(Symbol, tar.hasOwnProperty(nam) ? tar[nam] : nam);},
         get(tar, nam) {
-            if (Reflect.has(tar, nam)) return this.get(tar, tar[nam]);
+            if (tar.hasOwnProperty(nam)) return this.get(tar, tar[nam]);
             if (Reflect.has(Symbol, nam)) return Reflect.get(Symbol, nam);
             return Reflect.apply(typeof nam == "string" ? Symbol.for : typeof nam == "symbol" ? Symbol.keyFor : Symbol, undefined, [nam]);
         },
