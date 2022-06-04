@@ -96,7 +96,8 @@ if (true) {
             Object.assign(ret, [get, set].some(u => typeof u == "function") ? {get, set} : {writable: true, value});
             
             return Reflect.defineProperty(Reflect, nam, ret) && (typeof abbreviation != "string" || Reflect.set(tar, abbreviation, nam));
-        }
+        },
+        deleteProperty(tar, nam) {}
     })});
     
     define("$Y", {value: new Proxy(prox.Symbol, {
