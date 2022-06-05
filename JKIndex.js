@@ -102,13 +102,14 @@ if (true) {
             return Reflect.deleteProperty(Reflect, nam);
         },
         
-        ownKeys(tar) {
-            var ret = Reflect.ownKeys(Reflect);
-            
-            ret.forEach((u, i, arr) => {});
-            
-            return ret;
-        }
+        ownKeys(tar) {return Reflect.ownKeys(Reflect).map(u => Object.values(tar).includes(u) ? Object.keys(tar).find(v => tar[v] == u) : u);},
+        getOwnPropertyDescriptor(tar, nam) {return Reflect.getOwnPropertyDescriptor(Reflect, tar.hasOwnProperty(nam) ? tar[nam] : nam);},
+        
+        isExtensible(tar) {return Reflect.isExtensible(Reflect);},
+        preventExtensions(tar) {return Reflect.preventExtensions(Reflect);},
+        
+        getPrototypeOf(tar) {return Reflect.getPrototypeOf(Reflect);},
+        setPrototypeOf(tar, pro) {return Reflect.setPrototypeOf(Reflect, pro);}
     })});
     
     define("$Y", {value: new Proxy(prox.Symbol, {
