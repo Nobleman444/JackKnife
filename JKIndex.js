@@ -67,8 +67,8 @@ if (true) {
             iex: "isExtensible", pex: "preventExtensions", gpo: "getPrototypeOf", spo: "setPrototypeOf"
         },
         Symbol: {
-            ai: "asyncIterator", hi: "hasInstance", i: "iterator", ics: "isConcatSpreadable", m: "match", ma: "matchAll", r: "replace", sc: "species",
-            sl: "split", sr: "search", tp: "toPrimitive", tst: "toStringTag", u: "unscopables"
+            ai: "asyncIterator", hi: "hasInstance", i: "iterator", ics: "isConcatSpreadable", m: "match", ma: "matchAll", r: "replace",
+            sc: "species", sl: "split", sr: "search", tp: "toPrimitive", tst: "toStringTag", u: "unscopables"
         }
     };
     
@@ -85,32 +85,46 @@ if (true) {
         var ret = Object.fromEntries(Object.getOwnPropertyNames(Reflect).map(u => [u, Reflect[u]]));
     });});
     
-    define("$R", {value: new Proxy(prox.Reflect, {
-        has(tar, nam) {return Reflect.has(Reflect, tar.hasOwnProperty(nam) ? tar[nam] : nam);},
-        get(tar, nam) {return Reflect.get(Reflect, tar.hasOwnProperty(nam) ? tar[nam] : nam);},
-        set(tar, nam, val) {return Reflect.hasOwnProperty(val) && Reflect.set(tar, nam, val);},
+    define("$R", {value: new Proxy(prox.Reflect, Reflect.construct(function() {
+        const defer = (tar, nam) => {
+            while (tar.hasOwnProperty(nam)) nam = tar[nam];
+            return nam;
+        };
+        const d = f => ({configurable: true, enumerable: false, writable: true, value: f});
         
-        defineProperty(tar, nam, des) {
-            const {abbreviation, value, get, set} = des;
-            var ret = {configurable: true, enumerable: false};
-            Object.assign(ret, [get, set].some(u => typeof u == "function") ? {get, set} : {writable: true, value});
-            
-            return Reflect.defineProperty(Reflect, nam, ret) && (typeof abbreviation != "string" || Reflect.set(tar, abbreviation, nam));
-        },
-        deleteProperty(tar, nam) {
-            if (tar.hasOwnProperty(nam)) return Reflect.deleteProperty(Reflect, tar[nam]), Reflect.deleteProperty(tar, nam);
-            return Reflect.deleteProperty(Reflect, nam);
-        },
+        ["has", "get", "deleteProperty", "getOwnPropertyDescriptor"].forEach(u => {
+            Object.defineProperty(this, u, d(function(tar, nam) {return Reflect[u](Reflect, defer(tar, nam));}));
+        });
         
-        ownKeys(tar) {return Reflect.ownKeys(Reflect).map(u => Object.values(tar).includes(u) ? Object.keys(tar).find(v => tar[v] == u) : u);},
-        getOwnPropertyDescriptor(tar, nam) {return Reflect.getOwnPropertyDescriptor(Reflect, tar.hasOwnProperty(nam) ? tar[nam] : nam);},
+        Object.getOwnPropertyNames(Reflect).filter(u => ["Exten", "Proto"].some(v => u.includes(v))).forEach(u => {
+            Object.defineProperty(this, u, d(function(tar, pro) {return Reflect[u](Reflect, pro);}));
+        });
         
-        isExtensible(tar) {return Reflect.isExtensible(Reflect);},
-        preventExtensions(tar) {return Reflect.preventExtensions(Reflect);},
-        
-        getPrototypeOf(tar) {return Reflect.getPrototypeOf(Reflect);},
-        setPrototypeOf(tar, pro) {return Reflect.setPrototypeOf(Reflect, pro);}
-    })});
+        Object.defineProperties(this, {
+            set(tar, nam, val) {
+                if (val === undefined) return !tar.hasOwnProperty(nam) || Reflect.deleteProperty(tar, nam);
+                if (Reflect.hasOwnProperty(val)) return Reflect.set(tar, nam, val);
+                if (Array.isArray(val)) {
+                    if (val.length > 1) return Reflect.set(tar, nam, val[0]) && this.set(tar, val[0], val.slice(1));
+                    return this.set(tar, nam, val[0]);
+                }
+                return Reflect.set(Reflect, defer(tar, nam), val);
+            },
+            defineProperty(tar, nam, des) {
+                const {abbreviation, value, get, set} = des;
+                var ret = {configurable: true, enumerable: false};
+                Object.assign(ret, [get, set].some(u => typeof u == "function") ? {get, set} : {writable: true, value});
+                
+                return Reflect.defineProperty(Reflect, nam, ret) && (typeof abbreviation != "string" || Reflect.set(tar, abbreviation, nam));
+            },
+            ownKeys(tar) {
+                return Reflect.ownKeys(Reflect).flatMap(u => {
+                    const ret = Reflect.ownKeys(tar).filter(v => defer(tar, v) == u);
+                    return ret.length ? ret : [u];
+                });
+            }
+        });
+    }, [], Object))});
     
     define("$Y", {value: new Proxy(prox.Symbol, {
         has(tar, nam) {return Reflect.has(Symbol, tar.hasOwnProperty(nam) ? tar[nam] : nam);},
