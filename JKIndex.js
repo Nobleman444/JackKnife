@@ -92,16 +92,8 @@ if (true) {
         };
         const d = f => ({configurable: true, enumerable: false, writable: true, value: f});
         
-        ["has", "get", "deleteProperty", "getOwnPropertyDescriptor"].forEach(u => {
-            Object.defineProperty(this, u, d(function(tar, nam) {return Reflect[u](Reflect, defer(tar, nam));}));
-        });
-        
-        Object.getOwnPropertyNames(Reflect).filter(u => ["Exten", "Proto"].some(v => u.includes(v))).forEach(u => {
-            Object.defineProperty(this, u, d(function(tar, pro) {return Reflect[u](Reflect, pro);}));
-        });
-        
         Object.defineProperties(this, {
-            set(tar, nam, val) {
+            set: d(function(tar, nam, val) {
                 if (val === undefined) return !tar.hasOwnProperty(nam) || Reflect.deleteProperty(tar, nam);
                 if (Reflect.hasOwnProperty(val)) return Reflect.set(tar, nam, val);
                 if (Array.isArray(val)) {
@@ -109,21 +101,25 @@ if (true) {
                     return this.set(tar, nam, val[0]);
                 }
                 return Reflect.set(Reflect, defer(tar, nam), val);
-            },
-            defineProperty(tar, nam, des) {
+            }),
+            defineProperty: d(function(tar, nam, des) {
                 const {abbreviation, value, get, set} = des;
                 var ret = {configurable: true, enumerable: false};
                 Object.assign(ret, [get, set].some(u => typeof u == "function") ? {get, set} : {writable: true, value});
                 
                 return Reflect.defineProperty(Reflect, nam, ret) && (typeof abbreviation != "string" || Reflect.set(tar, abbreviation, nam));
-            },
-            ownKeys(tar) {
+            }),
+            ownKeys: d(function(tar) {
                 return Reflect.ownKeys(Reflect).flatMap(u => {
                     const ret = Reflect.ownKeys(tar).filter(v => defer(tar, v) == u);
                     return ret.length ? ret : [u];
                 });
-            }
+            })
         });
+        
+        
+        
+        
     }, [], Object))});
     
     define("$Y", {value: new Proxy(prox.Symbol, {
