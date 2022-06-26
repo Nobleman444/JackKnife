@@ -1,5 +1,5 @@
 if (true) {
-    const JKError = function(...x) {
+    const JKError = Object.setPrototypeOf(function JKError(...x) {
         switch (x.length) {
             case 0: x = ["<no message>"]; break;
             case 1:
@@ -19,7 +19,7 @@ if (true) {
         }
         
         return Reflect.construct(Error, x, JKError);
-    };
+    }, Error);
     
     Object.defineProperties(Object.setPrototypeOf(JKError.prototype, Error.prototype), {
         message: {configurable: true, enumerable: false, writable: true, value: ""},
@@ -27,12 +27,12 @@ if (true) {
     });
     
     const define = new Proxy(Object.assign(function (target, name, desc) {
-        const tarObj = target.reduce((acc, u) => acc[u], globalThis);
+        const tarObj = () => target.reduce((acc, u) => acc[u], globalThis);
         
         try {
             const ret = {configurable: true, enumerable: false, get: undefined, set: undefined, value: undefined, writable: true};
             
-            if (name in tarObj) throw JKError([...target, name].join(".") + " already exists");
+            if (name in tarObj()) throw JKError([...target, name].join(".") + " already exists");
             
             if (typeof desc != "object" || !desc) desc = {value: desc};
             
@@ -44,14 +44,14 @@ if (true) {
             } else {
                 delete ret.value;
                 delete ret.writable;
-                ret.set ??= function(x) {Object.defineProperty(tarObj, name, {value: x});};
+                ret.set ??= function(x) {Object.defineProperty(tarObj(), name, {value: x, writable: true});};
             }
             
-            Object.defineProperty(tarObj, name, ret);
+            Object.defineProperty(tarObj(), name, ret);
         } catch (err) {
             console.error(JKError("Failed to define " + [...target, name].join("."), err));
         } finally {
-            return tarObj;
+            return tarObj();
         }
     }, {on: []}), {
         apply(tar, thi, arg) {return Reflect.apply(tar, null, [tar.on, ...arg]);},
@@ -90,47 +90,62 @@ if (true) {
             while (tar.hasOwnProperty(nam)) nam = tar[nam];
             return nam;
         };
-        const d = f => ({configurable: true, enumerable: false, writable: true, value: f});
         
-        Object.defineProperties(this, {
-            set: d(function(tar, nam, val) {
+        Object.assign(this, {
+            has(tar, nam) {return Reflect.has(Reflect, defer(tar, nam));},
+            get(tar, nam) {return Reflect.get(Reflect, defer(tar, nam));},
+            set(tar, nam, val) {
                 if (val === undefined) return !tar.hasOwnProperty(nam) || Reflect.deleteProperty(tar, nam);
                 if (Reflect.hasOwnProperty(val)) return Reflect.set(tar, nam, val);
                 if (Array.isArray(val)) {
-                    if (val.length > 1) return Reflect.set(tar, nam, val[0]) && this.set(tar, val[0], val.slice(1));
-                    return this.set(tar, nam, val[0]);
+                    let [a, ...b] = val;
+                    if (b.length) return Reflect.set(tar, nam, a) && this.set(tar, a, b);
+                    return this.set(tar, nam, a);
                 }
                 return Reflect.set(Reflect, defer(tar, nam), val);
-            }),
-            defineProperty: d(function(tar, nam, des) {
+            },
+            
+            defineProperty(tar, nam, des) {
                 const {abbreviation, value, get, set} = des;
                 var ret = {configurable: true, enumerable: false};
                 Object.assign(ret, [get, set].some(u => typeof u == "function") ? {get, set} : {writable: true, value});
                 
                 return Reflect.defineProperty(Reflect, nam, ret) && (typeof abbreviation != "string" || Reflect.set(tar, abbreviation, nam));
-            }),
-            ownKeys: d(function(tar) {
+            },
+            deleteProperty(tar, nam) {return Reflect.deleteProperty(Reflect, defer(tar, nam));},
+            
+            ownKeys(tar) {
                 return Reflect.ownKeys(Reflect).flatMap(u => {
                     const ret = Reflect.ownKeys(tar).filter(v => defer(tar, v) == u);
                     return ret.length ? ret : [u];
                 });
-            })
+            },
+            getOwnPropertyDescriptor(tar, nam) {return Reflect.getOwnPropertyDescriptor(Reflect, defer(tar, nam));},
+            
+            isExtensible() {return Reflect.isExtensible(Reflect);},
+            preventExtensions() {return Reflect.preventExtensions(Reflect);},
+            
+            getPrototypeOf() {return Reflect.getPrototypeOf(Reflect);},
+            setPrototypeOf(_, pro) {return Reflect.setPrototypeOf(Reflect, pro);}
         });
-        
-        
-        
-        
     }, [], Object))});
     
-    define("$Y", {value: new Proxy(prox.Symbol, {
-        has(tar, nam) {return Reflect.has(Symbol, tar.hasOwnProperty(nam) ? tar[nam] : nam);},
-        get(tar, nam) {
-            if (tar.hasOwnProperty(nam)) return this.get(tar, tar[nam]);
-            if (Reflect.has(Symbol, nam)) return Reflect.get(Symbol, nam);
-            return Reflect.apply(typeof nam == "string" ? Symbol.for : typeof nam == "symbol" ? Symbol.keyFor : Symbol, undefined, [nam]);
-        },
-        set(tar, nam, val) {}
-    })});
+    define("$Y", {value: new Proxy(prox.Symbol, Reflect.construct(function() {
+        const defer = (tar, nam) => {
+            while (tar.hasOwnProperty(nam)) nam = tar[nam];
+            return nam;
+        };
+        
+        Object.assign(this, {
+            has(tar, nam) {return Reflect.has(Symbol, tar.hasOwnProperty(nam) ? tar[nam] : nam);},
+            get(tar, nam) {
+                if (tar.hasOwnProperty(nam)) return this.get(tar, tar[nam]);
+                if (Reflect.has(Symbol, nam)) return Reflect.get(Symbol, nam);
+                return Reflect.apply(typeof nam == "string" ? Symbol.for : typeof nam == "symbol" ? Symbol.keyFor : Symbol, undefined, [nam]);
+            },
+            set(tar, nam, val) {}
+        });
+    }, [], Object))});
     
     define("Logic", {value: Reflect.construct(function() {
         var d = f => ({configurable: true, enumerable: false, writable: true, value: f});
