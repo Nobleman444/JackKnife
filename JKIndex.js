@@ -59,17 +59,17 @@ if (true) {
     });
     
     const prox = {
-        Object: {
+        Object: Object.assign(Object, {
             
-        },
+        }),
         Reflect: {
             app: "apply", con: "construct", def: "defineProperty", del: "deleteProperty", key: "ownKeys", gpd: "getOwnPropertyDescriptor",
             iex: "isExtensible", pex: "preventExtensions", gpo: "getPrototypeOf", spo: "setPrototypeOf"
         },
-        Symbol: {
+        Symbol: Object.assign(Symbol, {
             ai: "asyncIterator", hi: "hasInstance", i: "iterator", ics: "isConcatSpreadable", m: "match", ma: "matchAll", r: "replace",
             sc: "species", sl: "split", sr: "search", tp: "toPrimitive", tst: "toStringTag", u: "unscopables"
-        }
+        })
     };
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
