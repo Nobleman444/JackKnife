@@ -81,7 +81,7 @@ if (true) {
         var ret = Object.fromEntries(Object.getOwnPropertyNames(Reflect).map(u => [u, Reflect[u]]));
     });});
     
-    define("$R", {value: new Proxy(Reflect, Reflect.construct(function() {
+    define("$R", {value: new Proxy(Reflect, (function() {
         const abbr = {
             app: "apply", con: "construct", def: "defineProperty", del: "deleteProperty", key: "ownKeys", gpd: "getOwnPropertyDescriptor",
             iex: "isExtensible", pex: "preventExtensions", gpo: "getPrototypeOf", spo: "setPrototypeOf"
@@ -91,11 +91,11 @@ if (true) {
             return nam;
         };
         
-        Object.assign(this, {
+        return {
             has(tar, nam) {return Reflect.has(tar, defer(nam));},
             get(tar, nam) {return Reflect.get(tar, defer(nam));},
             set(tar, nam, val) {
-                if (val === undefined) return !abbr.hasOwnProperty(nam) || Reflect.deleteProperty(abbr, nam);
+                if (val === undefined) return Reflect.deleteProperty(abbr, nam);
                 if (tar.hasOwnProperty(val)) return Reflect.set(abbr, nam, val);
                 if (Array.isArray(val)) {
                     let [a, ...b] = val;
@@ -127,8 +127,8 @@ if (true) {
             
             getPrototypeOf() {return Reflect.getPrototypeOf(Reflect);},
             setPrototypeOf(_, pro) {return Reflect.setPrototypeOf(Reflect, pro);}
-        });
-    }, [], Object))});
+        };
+    })())});
     
     define("$Y", {value: new Proxy(prox.Symbol, Reflect.construct(function() {
         const defer = (tar, nam) => {
