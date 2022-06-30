@@ -62,10 +62,6 @@ if (true) {
         Object: Object.assign(Object, {
             
         }),
-        Reflect: {
-            app: "apply", con: "construct", def: "defineProperty", del: "deleteProperty", key: "ownKeys", gpd: "getOwnPropertyDescriptor",
-            iex: "isExtensible", pex: "preventExtensions", gpo: "getPrototypeOf", spo: "setPrototypeOf"
-        },
         Symbol: Object.assign(Symbol, {
             ai: "asyncIterator", hi: "hasInstance", i: "iterator", ics: "isConcatSpreadable", m: "match", ma: "matchAll", r: "replace",
             sc: "species", sl: "split", sr: "search", tp: "toPrimitive", tst: "toStringTag", u: "unscopables"
@@ -85,24 +81,28 @@ if (true) {
         var ret = Object.fromEntries(Object.getOwnPropertyNames(Reflect).map(u => [u, Reflect[u]]));
     });});
     
-    define("$R", {value: new Proxy(prox.Reflect, Reflect.construct(function() {
-        const defer = (tar, nam) => {
-            while (tar.hasOwnProperty(nam)) nam = tar[nam];
+    define("$R", {value: new Proxy(Reflect, Reflect.construct(function() {
+        const abbr = {
+            app: "apply", con: "construct", def: "defineProperty", del: "deleteProperty", key: "ownKeys", gpd: "getOwnPropertyDescriptor",
+            iex: "isExtensible", pex: "preventExtensions", gpo: "getPrototypeOf", spo: "setPrototypeOf"
+        };
+        const defer = nam => {
+            while (abbr.hasOwnProperty(nam)) nam = abbr[nam];
             return nam;
         };
         
         Object.assign(this, {
-            has(tar, nam) {return Reflect.has(Reflect, defer(tar, nam));},
-            get(tar, nam) {return Reflect.get(Reflect, defer(tar, nam));},
+            has(tar, nam) {return Reflect.has(tar, defer(nam));},
+            get(tar, nam) {return Reflect.get(tar, defer(nam));},
             set(tar, nam, val) {
-                if (val === undefined) return !tar.hasOwnProperty(nam) || Reflect.deleteProperty(tar, nam);
-                if (Reflect.hasOwnProperty(val)) return Reflect.set(tar, nam, val);
+                if (val === undefined) return !abbr.hasOwnProperty(nam) || Reflect.deleteProperty(abbr, nam);
+                if (tar.hasOwnProperty(val)) return Reflect.set(abbr, nam, val);
                 if (Array.isArray(val)) {
                     let [a, ...b] = val;
-                    if (b.length) return Reflect.set(tar, nam, a) && this.set(tar, a, b);
+                    if (b.length) return Reflect.set(abbr, nam, a) && this.set(tar, a, b);
                     return this.set(tar, nam, a);
                 }
-                return Reflect.set(Reflect, defer(tar, nam), val);
+                return Reflect.set(tar, defer(nam), val);
             },
             
             defineProperty(tar, nam, des) {
