@@ -120,13 +120,7 @@ if (true) {
                     return ret.length ? ret : [u];
                 });
             },
-            getOwnPropertyDescriptor(tar, nam) {return Reflect.getOwnPropertyDescriptor(Reflect, defer(tar, nam));},
-            
-            isExtensible() {return Reflect.isExtensible(Reflect);},
-            preventExtensions() {return Reflect.preventExtensions(Reflect);},
-            
-            getPrototypeOf() {return Reflect.getPrototypeOf(Reflect);},
-            setPrototypeOf(_, pro) {return Reflect.setPrototypeOf(Reflect, pro);}
+            getOwnPropertyDescriptor(tar, nam) {return Reflect.getOwnPropertyDescriptor(tar, defer(nam));}
         };
     })())});
     
