@@ -59,9 +59,6 @@ if (true) {
     });
     
     const prox = {
-        Object: Object.assign(Object, {
-            
-        }),
         Symbol: Object.assign(Symbol, {
             ai: "asyncIterator", hi: "hasInstance", i: "iterator", ics: "isConcatSpreadable", m: "match", ma: "matchAll", r: "replace",
             sc: "species", sl: "split", sr: "search", tp: "toPrimitive", tst: "toStringTag", u: "unscopables"
@@ -71,17 +68,35 @@ if (true) {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
     [].forEach.call("unItf", u => {define("$" + u, {u: undefined, n: NaN, I: Infinity, t: true, f: false}[u]);});
     
-    define("$A", {value: new Proxy(Array, {apply(tar, thi, arg) {return tar.isArray(arg[0]);}})});
+    define("$A", {value: new Proxy(Array, {apply(tar, thi, arg) {return Reflect.apply(tar.isArray, tar, arg);}})});
     
     define("$doc", {value: document});
     
-    define("$O", Object);
+    define("$O", {value: new Proxy(Object, (() => {
+        const abbr = {
+            a: "assign", e: "entries", k: "keys", v: "values",
+            ...Object.fromEntries([["", "y"], ["s", "ies"]].map(u => ["dp", "definePropert"].map((v, i) => v + u[i])))
+        };
+        
+        return {
+            has(tar, nam) {return abbr.hasOwnProperty(nam) || Reflect.has(tar, nam);},
+            get(tar, nam) {
+                if (nam === "$") return {...abbr};
+                return Reflect.get(tar, abbr.hasOwnProperty(nam) ? abbr[nam] : nam);
+            },
+            set(tar, nam, val) {
+                if (nam === "$") return false;
+                if (/^s/.test(typeof val)) return Reflect.set(abbr, nam, val);
+                return Reflect.set(tar, abbr.hasOwnProperty(nam) ? abbr[nam] : nam, val);
+            }
+        };
+    })())});
     
     define("$P", function(target, handler = {}, nothing = []) {return new Proxy(target, new function() {
         var ret = Object.fromEntries(Object.getOwnPropertyNames(Reflect).map(u => [u, Reflect[u]]));
     });});
     
-    define("$R", {value: new Proxy(Reflect, (function() {
+    define("$R", {value: new Proxy(Reflect, (() => {
         const abbr = {
             app: "apply", con: "construct", def: "defineProperty", del: "deleteProperty", key: "ownKeys", gpd: "getOwnPropertyDescriptor",
             iex: "isExtensible", pex: "preventExtensions", gpo: "getPrototypeOf", spo: "setPrototypeOf"
