@@ -27,14 +27,22 @@ if (true) {
     });
     
     const define = new Proxy(Object.assign(function (target, name, desc) {
-        const tarObj = () => target.reduce((acc, u) => acc[u], globalThis);
+        var tarObj = () => target.reduce((acc, u) => acc[u], globalThis);
+        
+        try {
+            tarObj = tarObj();
+        } catch (err) {
+            throw JKError("Failed to define " + [...target, name].join("."), err);
+        }
         
         try {
             const ret = {configurable: true, enumerable: false, get: undefined, set: undefined, value: undefined, writable: true};
             
-            if (name in tarObj()) throw JKError([...target, name].join(".") + " already exists");
+            if (name in tarObj) throw JKError([...target, name].join(".") + " already exists");
             
             if (typeof desc != "object" || !desc) desc = {value: desc};
+            
+            if (typeof desc.value == "function" && !desc.value.name) Object.defineProperty(desc.value, "name", {value: name});
             
             Object.assign(ret, desc);
             
@@ -44,14 +52,14 @@ if (true) {
             } else {
                 delete ret.value;
                 delete ret.writable;
-                ret.set ??= function(x) {Object.defineProperty(tarObj(), name, {value: x, writable: true});};
+                ret.set ??= function(x) {Object.defineProperty(tarObj, name, {value: x, writable: true});};
             }
             
-            Object.defineProperty(tarObj(), name, ret);
+            Object.defineProperty(tarObj, name, ret);
         } catch (err) {
             console.error(JKError("Failed to define " + [...target, name].join("."), err));
         } finally {
-            return tarObj();
+            return tarObj;
         }
     }, {on: []}), {
         apply(tar, thi, arg) {return Reflect.apply(tar, null, [tar.on, ...arg]);},
@@ -59,11 +67,9 @@ if (true) {
     });
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
-    [].forEach.call("unItf", u => {define("$" + u, {u: undefined, n: NaN, I: Infinity, t: true, f: false}[u]);});
+    [..."unItf", "doc"].forEach((u, i) => {define("$" + u, {value: [undefined, NaN, Infinity, true, false, document][i]});});
     
-    define("$A", {value: new Proxy(Array, {apply(tar, thi, arg) {return Reflect.apply(tar.isArray, tar, arg);}})});
-    
-    define("$doc", {value: document});
+    define("$A", {value: new Proxy(Array, {apply(tar, _, arg) {return Reflect.apply(tar.isArray, tar, arg);}})});
     
     define("$O", {value: new Proxy(Object, (() => {
         const abbr = {
@@ -87,9 +93,7 @@ if (true) {
         };
     })())});
     
-    define("$P", function(target, handler = {}, nothing = []) {return new Proxy(target, new function() {
-        var ret = Object.fromEntries(Object.getOwnPropertyNames(Reflect).map(u => [u, Reflect[u]]));
-    });});
+    define("$P", function(...x) {return new Proxy(...x)});
     
     define("$R", {value: new Proxy(Reflect, (() => {
         const abbr = {
@@ -107,22 +111,23 @@ if (true) {
         };
     })())});
     
-    define("$Y", {value: new Proxy(prox.Symbol, Reflect.construct(function() {
+    define("$Y", {value: new Proxy(Symbol, (() => {
         const abbr = {
             ai: "asyncIterator", hi: "hasInstance", i: "iterator", ics: "isConcatSpreadable", m: "match", ma: "matchAll", r: "replace",
             sc: "species", sl: "split", sr: "search", tp: "toPrimitive", tst: "toStringTag", u: "unscopables"
         };
         const defer = (t, tar, nam, ...x) => Reflect[t](tar, abbr.hasOwnProperty(nam) ? abbr[nam] : nam, ...x);
         
-        Object.assign(this, {
-            get(tar, nam) {
-                if (tar.hasOwnProperty(nam)) return this.get(tar, tar[nam]);
-                if (Reflect.has(Symbol, nam)) return Reflect.get(Symbol, nam);
-                return Reflect.apply(typeof nam == "string" ? Symbol.for : typeof nam == "symbol" ? Symbol.keyFor : Symbol, undefined, [nam]);
+        return {
+            get(...x) {
+                return x[1] === "$" ? abbr : defer("has", ...x) ? defer("get", ...x) : Symbol[typeof x[1] == "string" ? "for" : "keyFor"](x[1]);
             },
-            set(tar, nam, val) {}
-        });
-    }, [], Object))});
+            set(...x) {return x[1] !== "$" && defer("set", ...x);},
+            ...Object.fromEntries([
+                "has", "defineProperty", "deleteProperty", "getOwnPropertyDescriptor"
+            ].map(u => [u, function(...x) {return defer(u, ...x);}]))
+        };
+    })())});
     
     define("Logic", {value: Reflect.construct(function() {
         var d = f => ({configurable: true, enumerable: false, writable: true, value: f});
@@ -170,8 +175,10 @@ if (true) {
             case -1: step *= -1;
             case 1:
                 for (let i = start; (stop - start) * (stop - i) > 0; i += step) {
-                    if (string && (i >= 0 && i < 0xd800 || i >= 0xe000 && i <= 0x10ffff)) ret.push(String.fromCodePoint(i));
-                    else if (!string) ret.push(i);
+                    if (string) {
+                        let I = Math.round(i);
+                        if (I >= 0 && I < 0xd800 || I >= 0xe000 && I <= 0x10ffff) ret.push(String.fromCodePoint(I));
+                    } else ret.push(i);
                 };
             default: return ret;
         }
@@ -181,8 +188,8 @@ if (true) {
     define.on = ["Array", "prototype"];
     
     define("cluster", function(length = 1) {
-        var ret = this.slice(0), n = Math.max(Math.round(+length), 1);
-        if (n == n) for (let i = 0; i < ret.length; i++) ret.spliceIn(i, n);
+        var ret = [], n = Math.max(Math.round(+length), 1);
+        if (n == n) for (let i = 0; i < this.length; i += n) ret.push(this.slice(i, i + n));
         return ret;
     });
     
@@ -229,9 +236,9 @@ if (true) {
     
     define("seconds", {get() {return this.getSeconds();}, set(x) {this.setSeconds(x);}});
     
-    define("setDay", function(x) {this.setDate(x - this.getDay() + this.getDate());});
+    define("setDay", function(x) {return this.setDate(x - this.getDay() + this.getDate());});
     
-    define("setUTCDay", function(x) {this.setUTCDate(x - this.getUTCDay() + this.getUTCDate());});
+    define("setUTCDay", function(x) {return this.setUTCDate(x - this.getUTCDay() + this.getUTCDate());});
     
     define("time", {get() {return this.getTime();}, set(x) {this.setTime(x);}});
     
@@ -273,8 +280,7 @@ if (true) {
     define("toChar", function() {
         var val = Math.round(this.valueOf());
         
-        if (val >= 0 && val < 0xd800 || val > 0xdfff && val <= 0xffff) return String.fromCharCode(val);
-        if (val > 0xffff && val <= 0x10ffff) return String.fromCodePoint(val);
+        if (val >= 0 && val <= 0x10ffff) return String.fromCodePoint(val);
         return "";
     });
     
@@ -282,7 +288,7 @@ if (true) {
     define.on = ["String"];
     
     define("lev", function(a, b) {
-        [a, b] = [a, b].map(u => String(u));
+        [a, b] = [a, b].map(String);
         
         if (!a.length) return b.length;
         if (!b.length) return a.length;
