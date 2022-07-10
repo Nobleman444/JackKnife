@@ -32,7 +32,8 @@ if (true) {
         try {
             tarObj = tarObj();
         } catch (err) {
-            throw JKError("Failed to define " + [...target, name].join("."), err);
+            console.error(JKError(target.join(".") + " not found", err));
+            return;
         }
         
         try {
@@ -67,9 +68,30 @@ if (true) {
     });
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
-    [..."unItf", "doc"].forEach((u, i) => {define("$" + u, {value: [undefined, NaN, Infinity, true, false, document][i]});});
+    [..."unitfg", "doc"].forEach((u, i) => {define("$" + u, {value: [undefined, NaN, Infinity, true, false, globalThis, document][i]});});
     
-    define("$A", {value: new Proxy(Array, {apply(tar, _, arg) {return Reflect.apply(tar.isArray, tar, arg);}})});
+    define("$A", {value: new Proxy(Array, {
+        has(tar, nam) {return /^(?:TA|[IUC]8|[IU]16|[IUF](?:32|64))$/.test(nam) || Reflect.has(tar, nam);},
+        get(tar, nam) {
+            switch (nam) {
+                case "TA": return Object.getPrototypeOf(Int8Array);
+                case "I8": return Int8Array;
+                case "U8": return Uint8Array;
+                case "C8": return Uint8ClampedArray;
+                case "I16": return Int16Array;
+                case "U16": return Uint16Array;
+                case "I32": return Int32Array;
+                case "U32": return Uint32Array;
+                case "F32": return Float32Array;
+                case "I64": return BigInt64Array;
+                case "U64": return BigUint64Array;
+                case "F64": return Float64Array;
+                default: return Reflect.get(tar, nam);
+            }
+        },
+        
+        apply(tar, _, arg) {return Reflect.apply(tar.isArray, tar, arg);}
+    })});
     
     define("$O", {value: new Proxy(Object, (() => {
         const abbr = {
