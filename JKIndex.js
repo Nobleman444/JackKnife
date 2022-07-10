@@ -68,7 +68,9 @@ if (true) {
     });
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
-    [..."unitfg", "doc"].forEach((u, i) => {define("$" + u, {value: [undefined, NaN, Infinity, true, false, globalThis, document][i]});});
+    [..."unitfgda"].forEach((u, i) => {
+        define("$" + u, {value: [undefined, NaN, Infinity, true, false, globalThis, document, function() {return arguments;}][i]});
+    });
     
     define("$A", {value: new Proxy(Array, {
         has(tar, nam) {return /^(?:TA|[IUC]8|[IU]16|[IUF](?:32|64))$/.test(nam) || Reflect.has(tar, nam);},
@@ -89,8 +91,13 @@ if (true) {
                 default: return Reflect.get(tar, nam);
             }
         },
-        
-        apply(tar, _, arg) {return Reflect.apply(tar.isArray, tar, arg);}
+        apply(tar, _, arg) {return Reflect.apply(tar.isArray, tar, arg);},
+        getOwnPropertyDescriptor(tar, nam) {
+            return Reflect.has(tar, nam) || !this.has(tar, nam) ? Reflect.getOwnPropertyDescriptor(tar, nam) : undefined
+        },
+        ...Object.fromEntries(["set", "defineProperty", "deleteProperty"].map(u => function(tar, nam, ...x) {
+            return (Reflect.has(tar, nam) || !this.has(tar, nam)) && Reflect[u](tar, nam, ...x);
+        }))
     })});
     
     define("$O", {value: new Proxy(Object, (() => {
@@ -152,18 +159,25 @@ if (true) {
     })())});
     
     define("Logic", {value: Reflect.construct(function() {
-        var d = f => ({configurable: true, enumerable: false, writable: true, value: f});
+        const that = this;
+        var d = f => ({configurable: true, enumerable: false, value: f, writable: true});
         
-        Object.defineProperties(this, {
-            t: d(function (...x) {return x.reduce((acc, u) => acc + !!u, 0);}),
-            f: d(function (...x) {return x.reduce((acc, u) => acc + !u, 0);}),
-            all: d(function (...x) {return this.t(...x) == x.length;}),
-            any: d(function (...x) {return this.t(...x) >= 1;}),
-            atl: d(function (n, ...x) {return n >= 0 ? this.t(...x) >= n : this.f(...x) >= -n;}),
-            atm: d(function (n, ...x) {return n >= 0 ? this.t(...x) <= n : this.f(...x) <= -n;}),
-            num: d(function (n, ...x) {return n >= 0 ? this.t(...x) == n : this.f(...x) == -n;}),
-            one: d(function (...x) {return this.num(1, ...x);}),
-            [Symbol.toStringTag]: Object.assign(d("Logic"), {writable: false})
+        Object.defineProperties(that, {
+            t: d(function(...x) {return x.reduce((acc, u) => acc + !!u, 0);}),
+            f: d(function(...x) {return x.reduce((acc, u) => acc + !u, 0);}),
+            
+            map: d(function(...x) {return x.map(u => !!u);}),
+            not: d(function(...x) {return x.map(u => !u);}),
+            
+            atl: d(function(n, ...x) {return that[n >= 0 ? "t" : "f"](...x) >= Math.abs(n);}),
+            atm: d(function(n, ...x) {return that[n >= 0 ? "t" : "f"](...x) <= Math.abs(n);}),
+            num: d(function(n, ...x) {return that[n >= 0 ? "t" : "f"](...x) == Math.abs(n);}),
+            
+            any: d(function(...x) {return that.atl(1, ...x);}),
+            one: d(function(...x) {return that.num(1, ...x);}),
+            all: d(function(...x) {return that.num(x.length, ...x);}),
+            
+            [Symbol.toStringTag]: {configurable: true, enumerable: false, value: "Logic", writable: false}
         });
     }, [], Object)});
     
