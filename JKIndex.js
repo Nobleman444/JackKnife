@@ -62,7 +62,7 @@ if (true) {
         } finally {
             return tarObj;
         }
-    }, {on: []}), {
+    }, {on: [], pro() {this.on.push("prototype");}}), {
         apply(tar, thi, arg) {return Reflect.apply(tar, null, [tar.on, ...arg]);},
         construct(tar, arg) {return Reflect.apply(tar, null, arg);}
     });
@@ -213,7 +213,7 @@ if (true) {
                 for (let i = start; (stop - start) * (stop - i) > 0; i += step) {
                     if (string) {
                         let I = Math.round(i);
-                        if (I >= 0 && I < 0xd800 || I >= 0xe000 && I <= 0x10ffff) ret.push(String.fromCodePoint(I));
+                        if (I >= 0 && I <= 0x10ffff) ret.push(String.fromCodePoint(I));
                     } else ret.push(i);
                 };
             default: return ret;
@@ -221,7 +221,7 @@ if (true) {
     });
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Array.prototype
-    define.on = ["Array", "prototype"];
+    define.pro();
     
     define("cluster", function(length = 1) {
         var ret = [], n = Math.max(Math.round(+length), 1);
@@ -232,7 +232,7 @@ if (true) {
     define("flatten", function() {
         var ret = this.slice(0);
         for (let i = 0; i < ret.length; ) {
-            if ($A(ret[i])) ret.splice(i, 1, ...ret[i]);
+            if (Array.isArray(ret[i])) ret.splice(i, 1, ...ret[i]);
             else i++;
         }
         return ret;
@@ -256,7 +256,7 @@ if (true) {
     ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].forEach((u, i) => {define(u, i);});
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Date.prototype
-    define.on = ["Date", "prototype"];
+    define.pro();
     
     define("date", {get() {return this.getDate();}, set(x) {this.setDate(x);}});
     
@@ -295,6 +295,25 @@ if (true) {
     define("utcYear", {get() {return this.getUTCFullYear();}, set(x) {this.setUTCFullYear(x);}});
     
     define("year", {get() {return this.getFullYear();}, set(x) {this.setFullYear(x);}});
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Document.prototype
+    define.on = ["Document"];
+    
+    define.pro();
+    
+    define("df", {get() {return this.createDocumentFragment;}});
+    
+    define("elem", {get() {return this.createElement;}});
+    
+    define("qs", {get() {return this.querySelector;}});
+    
+    define("qsa", {get() {return this.querySelectorAll;}});
+    
+    define("text", {get() {return this.createTextNode;}});
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DocumentFragment.prototype
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Element.prototype
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Math
     define.on = ["Math"];
