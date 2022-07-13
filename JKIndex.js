@@ -69,7 +69,7 @@ if (true) {
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
     [..."unitfgda"].forEach((u, i) => {
-        define("$" + u, {value: [undefined, NaN, Infinity, true, false, globalThis, document, function() {return arguments;}][i]});
+        define("$" + u, {value: [undefined, NaN, Infinity, true, false, globalThis, document, function $a() {return arguments;}][i]});
     });
     
     define("$A", {value: new Proxy(Array, {
@@ -142,8 +142,17 @@ if (true) {
     
     define("$X", {value: new Proxy(RegExp, {
         apply(tar, _, arg) {
-            if (typeof arg[0] == "object" && !(arg[0] instanceof tar)) ;
-        }
+            if (Array.isArray(arg[0]) && arg[0].hasOwnProperty("raw")) {
+                let [{raw: [input, ...a]}, ...b] = arg;
+                
+                for (let i = 0; i < a.length && i < b.length; i++) input += b[i] + a[i];
+                
+                return tar(...input.match(/^\/?(.*?[^\\])(?:\/(\w*))?$/).slice(1));
+            }
+            
+            return tar(...arg);
+        },
+        construct(tar, arg) {return this.apply(tar, undefined, arg);}
     })});
     
     define("$Y", {value: new Proxy(Symbol, (() => {
