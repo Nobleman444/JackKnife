@@ -140,6 +140,12 @@ if (true) {
         };
     })())});
     
+    define("$X", {value: new Proxy(RegExp, {
+        apply(tar, _, arg) {
+            if (typeof arg[0] == "object" && !(arg[0] instanceof tar)) ;
+        }
+    })});
+    
     define("$Y", {value: new Proxy(Symbol, (() => {
         const abbr = {
             ai: "asyncIterator", hi: "hasInstance", i: "iterator", ics: "isConcatSpreadable", m: "match", ma: "matchAll", r: "replace",
