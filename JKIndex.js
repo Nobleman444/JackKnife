@@ -68,8 +68,8 @@ if (true) {
     });
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
-    [..."unitfgda"].forEach((u, i) => {
-        define("$" + u, {value: [undefined, NaN, Infinity, true, false, globalThis, document, function $a() {return arguments;}][i]});
+    [..."unitfgdar"].forEach((u, i) => {
+        define("$" + u, {value: [undefined, NaN, Infinity, true, false, globalThis, document, function() {return arguments;}, x => x][i]});
     });
     
     define("$A", {value: new Proxy(Array, {
@@ -91,7 +91,7 @@ if (true) {
                 default: return Reflect.get(tar, nam);
             }
         },
-        apply(tar, _, arg) {return Reflect.apply(tar.isArray, tar, arg);},
+        apply(tar, thi, arg) {return Reflect.apply(tar.isArray, thi, arg);},
         getOwnPropertyDescriptor(tar, nam) {
             return Reflect.has(tar, nam) || !this.has(tar, nam) ? Reflect.getOwnPropertyDescriptor(tar, nam) : undefined
         },
@@ -102,12 +102,8 @@ if (true) {
     
     define("$O", {value: new Proxy(Object, (() => {
         const abbr = {
-            ...Object.fromEntries([["", "y"], ["s", "ies"]].map(u => ["dp", "definePropert"].map((v, i) => v + u[i]))),
             ...Object.fromEntries([["", "e"], ["f", "fromE"]].map(u => ["e", "ntries"].map((v, i) => u[i] + v))),
-            ...Object.fromEntries([
-                ...["", "s"].map(u => ["d", "Descriptor"].map(v => v + u)),
-                ["n", "Names"], ["s", "Symbols"]
-            ].map(u => ["g", "getOwnProperty"].map((v, i) => v + u[i]))),
+            ...Object.fromEntries([["n", "Names"], ["s", "Symbols"]].map(u => ["g", "getOwnProperty"].map((v, i) => v + u[i]))),
             
             a: "assign", k: "keys", v: "values"
         };
@@ -253,11 +249,13 @@ if (true) {
         return ret;
     });
     
-    define("last", {get() {return this[this.length - 1];}, set(x) {this[this.length - 1] = x;}});
+    define("last", {get() {return this[this.length - 1];}, set(x) {if (this.length) this[this.length - 1] = x;}});
     
     define("li", {get() {return this.length - 1;}, set(x) {this.length = x + 1;}});
     
     define("pluck", function(index) {return this.splice(index, 1)[0];});
+    
+    define("prefix", function(...arr) {return [].concat(...arr, this);});
     
     define("spliceIn", function(start, length) {return this.splice(start, length, this.slice(start, start + length));});
     
@@ -311,41 +309,47 @@ if (true) {
     
     define("year", {get() {return this.getFullYear();}, set(x) {this.setFullYear(x);}});
     
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Document.prototype
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Document
     define.on = ["Document"];
     
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Document.prototype
     define.pro();
     
     define("df", {get() {return this.createDocumentFragment;}});
     
-    define("elem", {get() {return this.createElement;}});
-    
-    define("qs", {get() {return this.querySelector;}});
-    
-    define("qsa", {get() {return this.querySelectorAll;}});
+    define("elem", function(tag, attr = {}, style = {}) {
+        var ret = this.createElement(tag);
+        Object.assign(ret, attr);
+        Object.assign(ret.style, style);
+        return ret;
+    });
     
     define("text", {get() {return this.createTextNode;}});
     
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DocumentFragment.prototype
-    
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Element.prototype
+    ["Document", "DocumentFragment", "Element"].forEach(u => {
+        new define([u, "prototype"], "qa", function(...t) {
+            return t.reduce((acc, v) => acc.concat([...this.querySelectorAll(v)].filter(w => !acc.includes(w))), []);
+        });
+        
+        new define([u, "prototype"], "qc", function(...t) {return this.querySelectorAll(t.join()).length;});
+        
+        new define([u, "prototype"], "qs", function(...t) {return t.map(v => this.querySelector(v)).find(v => v);});
+        
+        new define([u, "prototype"], "querySelectorCount", function(t) {return this.querySelectorAll(t).length;});
+    });
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Math
     define.on = ["Math"];
     
     define("mround", function(n, multiple = 10, direction) {
-        var ret = n / multiple;
-        switch (Math.sign(direction)) {
-            case 1: ret = Math.ceil(ret); break;
-            case -1: ret = Math.floor(ret); break;
-            case 0: ret = Math.trunc(ret); break;
-            default: ret = Math.round(ret);
-        }
-        return ret * multiple;
+        return Math[["floor", "trunc", "ceil"][Math.sign(direction) + 1] ?? "round"](n / multiple) * multiple;
     });
     
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Number
+    define.on = ["Number"];
+    
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Number.prototype
-    define.on = ["Number", "prototype"];
+    define.pro();
     
     define("toChar", function() {
         var val = Math.round(this.valueOf());
@@ -353,6 +357,69 @@ if (true) {
         if (val >= 0 && val <= 0x10ffff) return String.fromCodePoint(val);
         return "";
     });
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Object
+    define.on = ["Object"];
+    
+    define("construct", function(f, ...x) {return Reflect.construct(f, x, Object);});
+    
+    define($O.$.gde = "getOwnDescriptorEntries", function(o) {return Object.entries(Object.getOwnPropertyDescriptors(o));});
+    
+    define($O.$.gd = "getOwnPropertyDescription", function(...x) {
+        if (x.length < 2) return Object.getOwnPropertyDescriptors(...x);
+        return Object.getOwnPropertyDescriptor(...x);
+    });
+    
+    define($O.$.ge = "getOwnPropertyEntries", function(o) {
+        return Object.getOwnPropertyNames(o).concat(Object.getOwnPropertySymbols(o)).map(u => [u, o[u]]);
+    });
+    
+    define($O.$.gk = "getOwnPropertyKeys", function(o) {return Object.getOwnPropertyNames(o).concat(Object.getOwnPropertySymbols(o));});
+    
+    define($O.$.pro = "prototypeOf", function(...x) {
+        if (x.length < 2) return Object.getPrototypeOf(...x);
+        return Object.setPrototypeOf(...x);
+    });
+    
+    define("rekey", function(target, former, latter) {
+        const old = Object.getOwnPropertyDescriptor(target, former);
+        
+        if (old?.configurable) {
+            Object.defineProperty(target, latter, old);
+            delete target[former];
+        }
+    });
+    
+    define($O.$.dp = "setOwnPropertyDescription", function(...x) {
+        if (x.length < 3) return Object.defineProperties(...x);
+        return Object.defineProperty(...x);
+    });
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Object.prototype
+    define.pro();
+    
+    define("clone", function() {return Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));});
+    
+    define("copy", function() {
+        return Object.fromEntries(Object.getOwnPropertyNames(this).concat(Object.getOwnPropertySymbols(this)).map(u => [u, this[u]]));
+    });
+    
+    define("forEach", function(callback, thisArg) {for (let [k, v] of this[Symbol.iterator]()) callback.call(thisArg, v, k, this);});
+    
+    define("length", {get() {return Object.keys(this).length;}});
+    
+    define("includes", function(value) {return Object.values(this).includes(value);});
+    
+    define("size", {get() {return Object.getOwnPropertyNames(this).length;}});
+    
+    define(Symbol.iterator, function*() {yield* Object.entries(this);});
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Reflect
+    define.on = ["Reflect"];
+    
+    define($R.$.bor = "borrow", function(tar, ntr, nam, arg) {return Reflect.apply(Reflect.get(ntr.prototype, nam), tar, arg);});
+    
+    define($R.$.gra = "grapple", function(tar, nam, arg) {return Reflect.apply(Reflect.get(tar, nam), tar, arg);});
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~String
     define.on = ["String"];
@@ -367,7 +434,7 @@ if (true) {
     });
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~String.prototype
-    define.on = ["String", "prototype"];
+    define.pro();
     
     define("cluster", function(length = 1) {
         var ret = [], n = Math.max(Math.round(+length), 1);
