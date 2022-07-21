@@ -381,7 +381,7 @@ if (true) {
         return Object.setPrototypeOf(...x);
     });
     
-    define("rekey", function(target, former, latter) {
+    define("rename", function(target, former, latter) {
         const old = Object.getOwnPropertyDescriptor(target, former);
         
         if (old?.configurable) {
@@ -404,11 +404,19 @@ if (true) {
         return Object.fromEntries(Object.getOwnPropertyNames(this).concat(Object.getOwnPropertySymbols(this)).map(u => [u, this[u]]));
     });
     
+    define("filter", function(callback, thisArg) {
+        const ret = {};
+        for (let [k, v] of this[Symbol.iterator]()) if (callback.call(thisArg, v, k, this)) ret[k] = v;
+        return ret;
+    });
+    
     define("forEach", function(callback, thisArg) {for (let [k, v] of this[Symbol.iterator]()) callback.call(thisArg, v, k, this);});
     
     define("length", {get() {return Object.keys(this).length;}});
     
-    define("includes", function(value) {return Object.values(this).includes(value);});
+    define("map", function() {});
+    
+    define("includes", function(x) {return Object.values(this).includes(x);});
     
     define("size", {get() {return Object.getOwnPropertyNames(this).length;}});
     
@@ -420,6 +428,8 @@ if (true) {
     define($R.$.bor = "borrow", function(tar, ntr, nam, arg) {return Reflect.apply(Reflect.get(ntr.prototype, nam), tar, arg);});
     
     define($R.$.gra = "grapple", function(tar, nam, arg) {return Reflect.apply(Reflect.get(tar, nam), tar, arg);});
+    
+    define($R.$.trk = "trek", function(tar, nam) {return nam.reduce((acc, u) => Reflect.get(acc, u), tar);});
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~String
     define.on = ["String"];
@@ -454,4 +464,11 @@ if (true) {
     define("toFloat", function() {return parseFloat(this.valueOf());});
     
     define("toInt", function(n) {return parseInt(this.valueOf(), n);});
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Symbol
+    define.on = ["Symbol"];
+    
+    define($Y.$.x = "external", {configurable: false, writable: false, value: $Y()});
+    
+    define($Y.$.jk = "jackKnife", {configurable: false, writable: false, value: $Y()});
 }
