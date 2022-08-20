@@ -1,7 +1,7 @@
 {
     "manifest_version" : 2,
     "name" : "JackKnife",
-    "version" : "0.6",
+    "version" : "0.7",
     
     "description" : "Adds JKIndex and the other JK files to web pages",
     
@@ -9,13 +9,15 @@
         "48" : "JKInfo/JackKnife-48.png"
     },
     
-    "content_scripts" : [{
-        "matches" : [ "*://*/*" ],
-        "js" : [ "JKAgent.js" ],
-        "match_about_blank" : true,
-        "all_frames" : true,
-        "run_at" : "document_start"
-    }],
+    "content_scripts" : [
+        {
+            "matches" : [ "*://*/*" ],
+            "js" : [ "JKIndex.js" ],
+            "match_about_blank" : true,
+            "all_frames" : true,
+            "run_at" : "document_start"
+        }
+    ],
     
     "permissions" : [
         "clipboardRead",
