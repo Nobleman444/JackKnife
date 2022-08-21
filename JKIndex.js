@@ -66,9 +66,12 @@ if (!("JKINDEX" in globalThis)) {
                 return tarObj;
             }
         }, {on: [], pro() {this.on.push("prototype");}}), {
-            apply(tar, thi, arg) {return Reflect.apply(tar, null, [tar.on, ...arg]);},
+            apply(tar, thi, arg) {return Reflect.apply(tar, thi, [tar.on, ...arg]);},
             construct(tar, arg) {return Reflect.apply(tar, null, arg);}
         });
+        
+        const $dat = (value, {c: configurable = true, e: enumerable, w: writable = true} = {}) => ({configurable, enumerable, value, writable});
+        const $acc = (get, set, {c: configurable = true, e: enumerable} = {}) => ({configurable, enumerable, get, set});
         
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
         [..."unitfgdar"].forEach((u, i) => {
