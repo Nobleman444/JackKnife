@@ -1,5 +1,5 @@
 try {
-    console.log(JKINDEX);
+    console.log($g);
 } catch (err) {
     console.error(err);
 }
