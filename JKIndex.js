@@ -73,9 +73,12 @@ if (!("JKINDEX" in globalThis)) {
         const $dat = (value, {c: configurable = true, e: enumerable, w: writable = true} = {}) => ({configurable, enumerable, value, writable});
         const $acc = (get, set, {c: configurable = true, e: enumerable} = {}) => ({configurable, enumerable, get, set});
         
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~globalThis
-        [..."unitfgdar"].forEach((u, i) => {
-            define("$" + u, {value: [undefined, NaN, Infinity, true, false, globalThis, document, function() {return arguments;}, x => x][i]});
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~global shorthands
+        [..."unitfgdclarpse"].forEach((u, i) => {
+            Object.defineProperty(globalThis, "$" + u, $dat([
+                undefined, NaN, Infinity, true, false, globalThis, document, console, location, Array.isArray, String.raw, "prototype",
+                isFinite, Number.isInteger
+            ][i], {c: false, w: false}));
         });
         
         define("$A", {value: new Proxy(Array, {
