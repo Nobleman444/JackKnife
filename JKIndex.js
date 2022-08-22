@@ -7,14 +7,14 @@ if (!("JKINDEX" in globalThis)) {
                 case 0: x = ["<no message>"]; break;
                 case 1:
                     if (x[0] instanceof Error) x = ["<no message>", {cause: x[0]}];
-                    else if (x[0] instanceof Object && "cause" in x[0]) x = ["<no message>", {cause: x[0].cause}];
+                    else if (x[0] && "cause" in x[0]) x = ["<no message>", {cause: x[0].cause}];
                     else x = [String(x[0])];
                     break;
                     
                 case 2:
                     x[0] = String(x[0]);
                     if (x[1] instanceof Error) x[1] = {cause: x[1]};
-                    else if (x[1] instanceof Object && "cause" in x[1]) x[1] = {cause: x[1].cause};
+                    else if (x[1] && "cause" in x[1]) x[1] = {cause: x[1].cause};
                     else x[1] = {cause: JKError(String(x[1]))};
                     break;
                     
@@ -73,12 +73,35 @@ if (!("JKINDEX" in globalThis)) {
         const $dat = (value, {c: configurable = true, e: enumerable, w: writable = true} = {}) => ({configurable, enumerable, value, writable});
         const $acc = (get, set, {c: configurable = true, e: enumerable} = {}) => ({configurable, enumerable, get, set});
         
+        const shorthand = function(target, abbr = {}, handler = {}, key) {
+            function thrower(x) {
+                var mess = "shorthand: ";
+                
+                if (x instanceof Error) throw JKError(mess + "other error:", x);
+                
+                throw JKError(mess + ([
+                    "Argument 0 cannot be an anonymous function",
+                    "Argument 0 cannot be null",
+                    "Argument 0 needs a [Symbol.toStringTag] property"
+                ][x] ?? "unknown error"));
+            }
+            
+            if (key == undefined) {
+                switch (typeof target) {
+                    case "function": key = target.name; break;
+                    case "object": key = target[Symbol.toStringTag];
+                }
+            }
+            
+            key = String(key).replace(/^\$*(\p{ID_Continue}).*$/su, (m, p1) => "$" + p1.toUpperCase());
+        };
+        
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~global shorthands
         [..."unitfgdclarpse"].forEach((u, i) => {
             Object.defineProperty(globalThis, "$" + u, $dat([
                 undefined, NaN, Infinity, true, false, globalThis, document, console, location, Array.isArray, String.raw, "prototype",
                 isFinite, Number.isInteger
-            ][i], {c: false, w: false}));
+            ][i], {c: false, e: true, w: false}));
         });
         
         define("$A", {value: new Proxy(Array, {
